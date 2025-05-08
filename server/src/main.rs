@@ -1,11 +1,11 @@
-use axum::Router;
-use frontend::router::*;
-use leptos::logging::log;
-use leptos::prelude::*;
-use leptos_axum::{generate_route_list, LeptosRoutes};
-
 #[tokio::main]
 async fn main() {
+    use axum::Router;
+    use client::app::*;
+    use leptos::logging::log;
+    use leptos::prelude::*;
+    use leptos_axum::{generate_route_list, LeptosRoutes};
+
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
