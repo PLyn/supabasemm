@@ -29,4 +29,4 @@ ENV LEPTOS_SITE_ADDR="0.0.0.0:10000"
 ENV LEPTOS_SITE_ROOT=./site
 EXPOSE 10000
 
-CMD ["/app/supabasemm"]
+CMD ["/app/server"]
