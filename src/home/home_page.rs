@@ -21,7 +21,8 @@ pub fn HomePage() -> impl IntoView {
         <input node_ref=input_ref placeholder="Type something here." bind:value=(shout_result, set_shout_result) />
         <button on:click=move |_| {
             spawn_local(async move {
-                let uppercase_text = check_cache_hit_ratio("test".to_string()).await.unwrap_or_else(|e| e.to_string());
+                let input_value = input_ref.get().unwrap().value();
+                let uppercase_text = check_cache_hit_ratio(input_value).await.unwrap_or_else(|e| e.to_string());
                 set_shout_result.set(uppercase_text);
             });
         }>

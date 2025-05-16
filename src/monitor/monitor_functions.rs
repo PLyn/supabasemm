@@ -11,7 +11,7 @@ pub async fn check_cache_hit_ratio(input: String) -> Result<String, ServerFnErro
 
     // Configure the command
     let mut cmd = Command::new("supabase");
-    cmd.args(&["inspect", "db", "cache-hit"]);
+    cmd.args(&["inspect", "db", "cache-hit", "--db-url", input.as_str()]);
 
     // We want to capture the output (stdout and stderr)
     cmd.stdout(Stdio::piped());
@@ -47,6 +47,7 @@ pub async fn check_cache_hit_ratio(input: String) -> Result<String, ServerFnErro
                             println!("(empty)");
                         } else {
                             println!("{}", supabase_stdout_logs);
+                            text = supabase_stdout_logs.to_string().clone();
                         }
 
                         println!("\n--- Supabase STDERR ---");
