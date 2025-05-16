@@ -20,6 +20,13 @@ FROM rustlang/rust:nightly-alpine as runner
 
 WORKDIR /app
 
+# Install Supabase CLI in the runner image
+RUN apk update && \
+    apk add --no-cache curl bash && \
+    curl -LO "https://github.com/supabase/cli/releases/download/v2.22.12/supabase_2.22.12_linux_amd64.apk" && \
+    apk add --allow-untrusted supabase_2.22.12_linux_amd64.apk && \
+    rm supabase_2.22.12_linux_amd64.apk
+
 COPY --from=builder /work/target/release/ /app/
 COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
