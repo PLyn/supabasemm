@@ -1,4 +1,6 @@
 mod home;
+mod migrate;
+mod monitor;
 pub mod routes;
 
 #[cfg(feature = "hydrate")]

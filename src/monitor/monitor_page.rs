@@ -5,18 +5,13 @@ use leptos::task::spawn_local;
 
 /// Renders the home page of your application.
 #[component]
-pub fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
+pub fn MonitorPage() -> impl IntoView {
     let input_ref = NodeRef::<Input>::new();
 
     let (shout_result, set_shout_result) = signal("Submit".to_string());
     view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
-        <div>"Test area below"</div>
-        <h1>Currently set Database connection string</h1>
+        <h2>Supabase Monitor</h2>
+        <h2>Currently set Database connection string</h2>
 
         <input node_ref=input_ref placeholder="Type something here." bind:value=(shout_result, set_shout_result) />
         <button on:click=move |_| {
@@ -25,7 +20,7 @@ pub fn HomePage() -> impl IntoView {
                 set_shout_result.set(uppercase_text);
             });
         }>
-        {shout_result}
+        Run Command
         </button>
     }
 }

@@ -1,4 +1,6 @@
 use crate::home::HomePage;
+use crate::migrate::MigratePage;
+use crate::monitor::MonitorPage;
 
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -36,13 +38,22 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/supabasemm.css"/>
 
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="Supa Migrate and Monitor"/>
+
+        <h1>"Supabase M&M"</h1>
+        <a href="/">Home</a>
+        <div></div>
+        <a href="/migrate">Migrate</a>
+        <div></div>
+        <a href="/monitor">Monitor</a>
 
         // content for this welcome page
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("/migrate") view=MigratePage/>
+                    <Route path=StaticSegment("/monitor") view=MonitorPage/>
                 </Routes>
             </main>
         </Router>
