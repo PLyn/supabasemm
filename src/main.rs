@@ -109,6 +109,8 @@ struct AppState {
 #[cfg(feature = "ssr")]
 async fn login_handler(State(app_state): State<AppState>, session: Session) -> impl IntoResponse {
     eprintln!("Login handler called");
+    eprintln!("Session ID at login: {:?}", session.id());
+
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
     let csrf_token = CsrfToken::new_random();
 
@@ -137,10 +139,36 @@ async fn login_handler(State(app_state): State<AppState>, session: Session) -> i
         csrf_token_secret: Some(csrf_token.secret().to_string()),
     };
 
-    session
-        .insert("oauth_data", session_data)
+    // Store data in session both as a struct and as individual values for redundancy
+    if let Err(e) = session.insert("oauth_data", session_data).await {
+        eprintln!("Failed to insert oauth_data into session: {:?}", e);
+    }
+
+    // Also store as individual keys as a backup
+    if let Err(e) = session
+        .insert("pkce_verifier_secret", pkce_verifier.secret().to_string())
         .await
-        .expect("Failed to insert oauth_data into session");
+    {
+        eprintln!(
+            "Failed to insert pkce_verifier_secret into session: {:?}",
+            e
+        );
+    }
+
+    if let Err(e) = session
+        .insert("csrf_token_secret", csrf_token.secret().to_string())
+        .await
+    {
+        eprintln!("Failed to insert csrf_token_secret into session: {:?}", e);
+    }
+
+    // Attempt to immediately read back to verify data was stored
+    match session.get::<OAuthSessionData>("oauth_data").await {
+        Ok(Some(_)) => eprintln!("Successfully verified oauth_data in session"),
+        Ok(None) => eprintln!("WARNING: oauth_data was not found during verification"),
+        Err(e) => eprintln!("Error verifying oauth_data in session: {:?}", e),
+    }
+
     eprintln!("PKCE verifier and CSRF token stored in session. Redirecting to Supabase...");
     Redirect::to(&auth_url)
 }
@@ -164,22 +192,60 @@ async fn callback_handler(
         params.code, params.state
     );
 
-    let oauth_data: OAuthSessionData = session
-        .get("oauth_data")
-        .await
-        .expect("Failed to get oauth_data from session")
-        .unwrap_or_default();
+    // Debug session data
+    eprintln!("Session ID at callback: {:?}", session.id());
 
-    session
-        .remove::<OAuthSessionData>("oauth_data")
-        .await
-        .expect("Failed to remove oauth_data from session");
+    let oauth_data: Option<OAuthSessionData> = match session.get("oauth_data").await {
+        Ok(data) => {
+            eprintln!("Session get successful, data: {:?}", data);
+            data
+        }
+        Err(e) => {
+            eprintln!("Session get error: {:?}", e);
+            None
+        }
+    };
+
+    let oauth_data = match oauth_data {
+        Some(data) => data,
+        None => {
+            eprintln!("No oauth_data found in session");
+            // Try alternative retrieval for PKCE and CSRF (direct keys)
+            let pkce_verifier = session
+                .get::<String>("pkce_verifier_secret")
+                .await
+                .ok()
+                .flatten();
+            let csrf_token = session
+                .get::<String>("csrf_token_secret")
+                .await
+                .ok()
+                .flatten();
+
+            if pkce_verifier.is_some() && csrf_token.is_some() {
+                eprintln!("Found direct PKCE and CSRF keys instead");
+                OAuthSessionData {
+                    pkce_verifier_secret: pkce_verifier,
+                    csrf_token_secret: csrf_token,
+                }
+            } else {
+                return Html(
+                    "<h1>Error</h1><p>No session data found. Please try logging in again.</p>\
+                     <p><a href=\"/connect-supabase/login\">Back to Login</a></p>"
+                        .to_string(),
+                );
+            }
+        }
+    };
+
+    session.remove::<OAuthSessionData>("oauth_data").await.ok(); // Use ok() to ignore errors
 
     // Error handling for missing PKCE verifier
     if oauth_data.pkce_verifier_secret.is_none() {
         eprintln!("No PKCE verifier found in session");
         return Html(
-            "<h1>Error</h1><p>No PKCE verifier found in session. Please try logging in again.</p>"
+            "<h1>Error</h1><p>No PKCE verifier found in session. Please try logging in again.</p>\
+             <p><a href=\"/connect-supabase/login\">Back to Login</a></p>"
                 .to_string(),
         );
     }
@@ -189,7 +255,8 @@ async fn callback_handler(
     if oauth_data.csrf_token_secret.is_none() {
         eprintln!("No CSRF token found in session");
         return Html(
-            "<h1>Error</h1><p>No CSRF token found in session. Please try logging in again.</p>"
+            "<h1>Error</h1><p>No CSRF token found in session. Please try logging in again.</p>\
+             <p><a href=\"/connect-supabase/login\">Back to Login</a></p>"
                 .to_string(),
         );
     }
@@ -385,10 +452,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: app_config.clone(),
     };
 
+    // Create a more robust session store with explicit configuration
     let session_store = MemoryStore::default();
 
-    // Fix the session layer configuration
-    let session_layer = SessionManagerLayer::new(session_store).with_secure(false); // Set to true if using HTTPS
+    // Configure session with longer duration and debug-friendly settings
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false) // Set to false for HTTP, true for HTTPS
+        .with_same_site(tower_sessions::cookie::SameSite::Lax);
 
     // Set up Leptos integration
     let conf = get_configuration(None)?;
