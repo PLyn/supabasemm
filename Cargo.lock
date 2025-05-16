@@ -212,9 +212,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bitflags"
-version = "2.9.0"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
+checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
 
 [[package]]
 name = "block-buffer"
@@ -269,19 +269,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook",
- "leptos",
- "leptos_axum",
- "leptos_meta",
- "leptos_router",
- "shared",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "codee"
@@ -1907,21 +1894,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "client",
- "leptos",
- "leptos_axum",
- "leptos_meta",
- "leptos_router",
- "shared",
- "tokio",
- "tower-http",
-]
-
-[[package]]
 name = "server_fn"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1999,13 +1971,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shared"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2050,6 +2015,21 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "supabasemm"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos_axum",
+ "leptos_meta",
+ "leptos_router",
+ "tokio",
+ "tower-http",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "syn"

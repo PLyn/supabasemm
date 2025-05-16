@@ -1,39 +1,49 @@
-[workspace]
-resolver = "2"
-members = ["client", "server", "shared"]
+[package]
+name = "supabasemm"
+version = "0.1.0"
+edition = "2021"
 
-[workspace.dependencies]
-client = { path = "client" }
-server = { path = "server" }
-shared = { path = "shared" }
+[lib]
+crate-type = ["cdylib", "rlib"]
 
-leptos = { version = "0.8" }
-leptos_router = { version = "0.8" }
-axum = { version = "0.8" }
-console_error_panic_hook = { version = "0.1" }
-leptos_axum = { version = "0.8" }
-leptos_meta = { version = "0.8" }
-tokio = { version = "1", features = ["rt-multi-thread"] }
-wasm-bindgen = { version = "=0.2.100" }
-
+[dependencies]
+leptos = { version = "0.8.0" }
+leptos_router = { version = "0.8.0" }
+axum = { version = "0.8.0", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+leptos_axum = { version = "0.8.0", optional = true }
+leptos_meta = { version = "0.8.0" }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+wasm-bindgen = { version = "=0.2.100", optional = true }
 tower-http = { version = "0.6.4", features = [
     "compression-gzip",
     "compression-br",
-] }
+], optional = true }
 
-# See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
+[features]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:tower-http",
+    "dep:leptos_axum",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
 
-# A leptos project defines which workspace members
-# that are used together frontend (lib) & server (bin)
-[[workspace.metadata.leptos]]
-# this name is used for the wasm, js and css file names
-name = "start-axum-workspace"
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 
-# the package in the workspace that contains the server binary (binary crate)
-bin-package = "server"
+# Defines a size-optimized profile for the WASM bundle in release mode
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
 
-# the package in the workspace that contains the frontend wasm binary (library crate)
-lib-package = "client"
+[package.metadata.leptos]
+# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
+output-name = "supabasemm"
 
 # The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
@@ -44,7 +54,6 @@ site-pkg-dir = "pkg"
 
 # [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
 style-file = "style/main.scss"
-
 # Assets source dir. All files found here will be copied and synchronized to site-root.
 # The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
 #
@@ -66,16 +75,13 @@ end2end-dir = "end2end"
 #  The browserlist query used for optimizing the CSS.
 browserquery = "defaults"
 
-# Set by cargo-leptos watch when building with that tool. Controls whether autoreload JS will be included in the head
-watch = false
-
 # The environment Leptos will run in, usually either "DEV" or "PROD"
 env = "DEV"
 
 # The features to use when compiling the bin target
 #
 # Optional. Can be over-ridden with the command line parameter --bin-features
-bin-features = []
+bin-features = ["ssr"]
 
 # If the --no-default-features flag should be used when compiling the bin target
 #
@@ -92,10 +98,7 @@ lib-features = ["hydrate"]
 # Optional. Defaults to false.
 lib-default-features = false
 
+# The profile to use for the lib target when compiling for release
+#
+# Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
-
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
