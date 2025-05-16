@@ -9,6 +9,7 @@ pub fn MonitorPage() -> impl IntoView {
     let input_ref = NodeRef::<Input>::new();
     let (conn_string, set_conn_string) = signal("".to_string());
     let (result_logs, set_result_logs) = signal("Output logs will be displayed here".to_string());
+
     view! {
         <h2>Supabase Monitor</h2>
         <h2>Set Database connection string</h2>
@@ -17,8 +18,9 @@ pub fn MonitorPage() -> impl IntoView {
         <br />
         <button on:click=move |_| {
             spawn_local(async move {
-                let input_value = input_ref.get().unwrap().value();
+                let input_value = input_ref.get_untracked().unwrap().value();
                 let uppercase_text = check_cache_hit_ratio(input_value).await.unwrap_or_else(|e| e.to_string());
+
                 set_result_logs.set(uppercase_text);
             });
         }>

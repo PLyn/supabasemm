@@ -89,6 +89,5 @@ pub async fn check_cache_hit_ratio(input: String) -> Result<String, ServerFnErro
             eprintln!("Please ensure 'supabase' CLI is installed and in your PATH.");
         }
     }
-
     Ok(text)
 }
