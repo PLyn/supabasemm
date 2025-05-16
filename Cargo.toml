@@ -7,6 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+reqwest = { version = "0.12.15", features = ["json"], optional = true }
 leptos = { version = "0.8.0" }
 leptos_router = { version = "0.8.0" }
 axum = { version = "0.8.0", optional = true }
@@ -19,9 +20,18 @@ tower-http = { version = "0.6.4", features = [
     "compression-gzip",
     "compression-br",
 ], optional = true }
+dotenvy = { version = "0.15.7", optional = true }
+oauth2 = { version = "5.0.0", optional = true }
+serde = { version = "1.0.219", optional = true }
+tower-sessions = { version = "0.14.0", optional = true }
 
 [features]
 ssr = [
+    "dep:dotenvy",
+    "dep:oauth2",
+    "dep:reqwest",
+    "dep:serde",
+    "dep:tower-sessions",
     "dep:axum",
     "dep:tokio",
     "dep:tower-http",
@@ -32,6 +42,10 @@ ssr = [
 ]
 
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
+oauth2 = ["dep:oauth2"]
+reqwest = ["dep:reqwest"]
+serde = ["dep:serde"]
+tower-sessions = ["dep:tower-sessions"]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
