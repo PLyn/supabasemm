@@ -2,6 +2,8 @@ mod home;
 mod migrate;
 mod monitor;
 pub mod routes;
+#[cfg(feature = "ssr")]
+pub mod server;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

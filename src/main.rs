@@ -1,15 +1,15 @@
 #[cfg(feature = "ssr")]
-mod server;
+use supabasemm::server::*;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use axum::{routing::get, Router};
+    use handlers::{callback_handler, login_handler, projects_handler};
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use server::handlers::{callback_handler, login_handler, projects_handler};
-    use server::server_init;
+    use server_init;
     use supabasemm::routes::*;
     use tower_http::compression::CompressionLayer;
 
