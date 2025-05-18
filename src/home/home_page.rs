@@ -28,5 +28,13 @@ pub fn HomePage() -> impl IntoView {
         }>
         {shout_result}
         </button>
+        <h1>"Supabase Connect Example (Rust/Axum)"</h1>
+         <p>"This is an example of implementing Supabase OAuth integration."</p>
+         <p>
+            <a href="/connect-supabase/login" rel="external">"Login with Supabase"</a>
+         </p>
+         <p>
+            <a href="/connect-supabase/projects" rel="external">"View Projects (if authenticated)"</a>
+         </p>
     }
 }
