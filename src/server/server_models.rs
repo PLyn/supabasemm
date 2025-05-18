@@ -1,4 +1,3 @@
-use oauth2::basic::BasicClient;
 use serde::{Deserialize, Serialize};
 
 // --- Configuration Struct ---
@@ -59,7 +58,6 @@ pub struct OAuthSessionData {
 // --- AppState for Axum handlers ---
 #[derive(Clone)]
 pub struct AppState {
-    pub oauth_client: BasicClient,
     pub config: AppConfig,
 }
 

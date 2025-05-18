@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 #[server]
-pub async fn check_cache_hit_ratio(input: String) -> Result<String, ServerFnError> {
+pub async fn check_cache_hit_ratio(_input: String) -> Result<String, ServerFnError> {
     use std::process::Stdio;
     use tokio::process::Command;
 
