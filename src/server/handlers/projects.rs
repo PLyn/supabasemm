@@ -6,11 +6,15 @@ use axum::{
 use reqwest::header::{ACCEPT, AUTHORIZATION};
 use tower_sessions::Session;
 
+//const CACHE_QUERY: &str = include_str!("cache.sql");
+
 // GET /connect-supabase/projects (protected - requires token)
 pub async fn projects_handler(
     State(app_state): State<AppState>,
     session: Session,
 ) -> impl IntoResponse {
+    //println!("Embedded SQL query:\n{}", CACHE_QUERY);
+
     eprintln!("Projects handler called");
     let token_option: Option<String> = session
         .get("supabase_access_token")
