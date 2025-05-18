@@ -14,6 +14,9 @@ RUN rustup target add wasm32-unknown-unknown
 WORKDIR /work
 COPY . .
 
+# Build your Leptos application with explicit OpenSSL library path for the linker
+RUN PKG_CONFIG_PATH=/usr/lib/pkgconfig OPENSSL_LIB_DIR=/usr/lib cargo leptos build --release -vv
+
 RUN cargo leptos build --release -vv
 
 FROM rustlang/rust:nightly-alpine as runner
