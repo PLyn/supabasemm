@@ -1,5 +1,6 @@
-use crate::server::{api_request::api_request, server_models::AppState};
-use crate::shared::models::SupabaseProject;
+use crate::server::api::call_api;
+use crate::server::server_models::AppState;
+use crate::shared::models::Project;
 use axum::{
     extract::State,
     response::{Html, IntoResponse},
@@ -15,11 +16,11 @@ pub async fn projects_handler(
     //println!("Embedded SQL query:\n{}", CACHE_QUERY);
 
     let url = format!("{}/projects", app_state.config.mgmt_api_base_url);
-    let api_response = api_request(session, url).await;
+    let api_response = call_api(session, url).await;
 
     if let Ok(response) = api_response {
         if response.status().is_success() {
-            match response.json::<Vec<SupabaseProject>>().await {
+            match response.json::<Vec<Project>>().await {
                 Ok(projects) => {
                     let project_list_html = projects
                         .iter()

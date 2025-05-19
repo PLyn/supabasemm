@@ -1,4 +1,4 @@
-pub mod api_request;
+pub mod api;
 pub mod handlers;
 pub mod server_init;
 pub mod server_models;

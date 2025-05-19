@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SupabaseProject {
+pub struct Project {
     pub id: String,
     pub name: String,
     pub region: String,
