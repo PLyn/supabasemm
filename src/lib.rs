@@ -2,7 +2,6 @@ mod home;
 mod migrate;
 mod monitor;
 pub mod routes;
-#[cfg(feature = "ssr")]
 pub mod server;
 pub mod shared;
 

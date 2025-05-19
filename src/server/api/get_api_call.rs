@@ -4,7 +4,7 @@ use tower_sessions::Session;
 
 use super::request_error::ApiRequestError;
 
-pub async fn call_api(session: Session, url: String) -> Result<Response, ApiRequestError> {
+pub async fn get_api_call(session: Session, url: String) -> Result<Response, ApiRequestError> {
     let token_option: Option<String> = session // <--- Variable name and type corrected
         .get("supabase_access_token")
         .await

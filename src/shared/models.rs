@@ -13,5 +13,4 @@ pub struct Project {
     pub name: String,
     pub region: String,
     pub status: String,
-    // Add other fields if needed
 }
