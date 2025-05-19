@@ -60,7 +60,7 @@ pub fn MonitorPage() -> impl IntoView {
                 }
             });
         }>
-        Check Cache hit Ratio
+        Get projects
         </button>
     }
 }

@@ -5,10 +5,6 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub client_id: String,
     pub client_secret: String,
-    pub auth_url: String,
-    pub token_url: String,
-    pub redirect_uri: String,
-    pub mgmt_api_base_url: String,
 }
 
 impl AppConfig {
@@ -32,11 +28,6 @@ impl AppConfig {
         Ok(Self {
             client_id,
             client_secret,
-            // Fixed URLs to include /v1/ in the path
-            auth_url: "https://api.supabase.com/v1/oauth/authorize".to_string(),
-            token_url: "https://api.supabase.com/v1/oauth/token".to_string(),
-            redirect_uri,
-            mgmt_api_base_url: "https://api.supabase.com/v1".to_string(),
         })
     }
 }

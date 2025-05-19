@@ -1,4 +1,7 @@
-use crate::server::server_models::{AppState, CallbackParams, OAuthSessionData};
+use crate::{
+    server::server_models::{AppState, CallbackParams, OAuthSessionData},
+    shared::models::{REDIRECT_URL, TOKEN_URL},
+};
 use axum::{
     extract::{Query, State},
     response::{Html, IntoResponse},
@@ -103,7 +106,6 @@ pub async fn callback_handler(
 
     // Use the reqwest client directly for token exchange
     let client = reqwest::Client::new();
-    let token_url = &app_state.config.token_url;
 
     let params = [
         ("client_id", app_state.config.client_id.as_str()),
@@ -111,10 +113,10 @@ pub async fn callback_handler(
         ("code", params.code.as_str()),
         ("code_verifier", pkce_verifier.secret()),
         ("grant_type", "authorization_code"),
-        ("redirect_uri", app_state.config.redirect_uri.as_str()),
+        ("redirect_uri", REDIRECT_URL),
     ];
 
-    let response = match client.post(token_url).form(&params).send().await {
+    let response = match client.post(TOKEN_URL).form(&params).send().await {
         Ok(res) => res,
         Err(e) => {
             eprintln!("Failed to exchange token: {:?}", e);
@@ -156,7 +158,6 @@ pub async fn callback_handler(
         }
     };
 
-    // Store token in session
     session
         .insert("supabase_access_token", token_data.access_token.clone())
         .await
@@ -167,10 +168,8 @@ pub async fn callback_handler(
             "Refresh Token received (store securely if needed for long-term use): {}",
             refresh_token
         );
-        // For a real app, store refresh_token securely, associated with the user/integration
     }
 
-    // Convert the redirect to HTML with a page that will redirect
     Html(format!(
         r#"
         <!DOCTYPE html>

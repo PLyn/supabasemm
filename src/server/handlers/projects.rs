@@ -1,21 +1,14 @@
-use crate::server::api::call_api;
-use crate::server::server_models::AppState;
 use crate::shared::models::Project;
-use axum::{
-    extract::State,
-    response::{Html, IntoResponse},
-};
+use crate::{server::api::call_api, shared::models::MGMT_API_BASE_URL};
+use axum::response::{Html, IntoResponse};
 use reqwest::StatusCode;
 use tower_sessions::Session;
 //const CACHE_QUERY: &str = include_str!("cache.sql");
 
-pub async fn projects_handler(
-    State(app_state): State<AppState>,
-    session: Session,
-) -> impl IntoResponse {
+pub async fn projects_handler(session: Session) -> impl IntoResponse {
     //println!("Embedded SQL query:\n{}", CACHE_QUERY);
 
-    let url = format!("{}/projects", app_state.config.mgmt_api_base_url);
+    let url = format!("{}/projects", MGMT_API_BASE_URL);
     let api_response = call_api(session, url).await;
 
     if let Ok(response) = api_response {
