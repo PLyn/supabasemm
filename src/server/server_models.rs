@@ -41,14 +41,6 @@ impl AppConfig {
     }
 }
 
-// --- Structs for API responses and session data ---
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SupabaseProject {
-    pub id: String,
-    pub name: String,
-    // Add other fields if needed
-}
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct OAuthSessionData {
     pub pkce_verifier_secret: Option<String>,

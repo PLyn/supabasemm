@@ -25,7 +25,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/connect-supabase/login", get(login_handler))
         .route("/connect-supabase/oauth2/callback", get(callback_handler))
         .route("/connect-supabase/projects", get(projects_handler))
-        .layer(session_layer)
         .with_state(app_state)
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
@@ -34,6 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .fallback(leptos_axum::file_and_error_handler(shell))
         .with_state(leptos_options.clone())
+        .layer(session_layer)
         .layer(CompressionLayer::new());
 
     log!("listening on http://{}", &addr);

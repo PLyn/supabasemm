@@ -1,4 +1,5 @@
 use super::check_cache_hit_ratio;
+use super::monitor_functions::test;
 use leptos::html::Input;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -28,5 +29,38 @@ pub fn MonitorPage() -> impl IntoView {
         </button>
         <br />
         <textarea rows=5 cols=40 bind:value=(result_logs, set_result_logs)></textarea>
+        <button on:click=move |_| {
+            spawn_local(async move {
+                let projects = test().await;
+                match projects {
+                    Ok(projects_vec) => {
+                        let projects_as_strings: Vec<String> = projects_vec
+                                .into_iter() // Consume the Vec<SupabaseProject>
+                                .map(|project| {
+                                    // Format the project details into a String
+                                    // You need to access project fields like project.name, project.id, etc.
+                                    // Ensure SupabaseProject is imported and has necessary fields accessible
+                                    format!(
+                                        "Project: {} || ID: {} || Region: {} || Status: {})",
+                                        project.name,
+                                        project.id,
+                                        project.region,
+                                        project.status
+                                    )
+                                })
+                                .collect();
+                        let combined_output = projects_as_strings.join("\n");
+                        set_result_logs.set(combined_output);
+                    }
+                    Err(e) => { // e is ServerFnError
+                        eprintln!("Error calling test() server function: {:?}", e);
+                        // Handle the error by setting the signal with the error message
+                        set_result_logs.set(format!("Error fetching projects: {}", e));
+                    }
+                }
+            });
+        }>
+        Check Cache hit Ratio
+        </button>
     }
 }

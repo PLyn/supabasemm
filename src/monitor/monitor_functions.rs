@@ -91,3 +91,61 @@ pub async fn check_cache_hit_ratio(input: String) -> Result<String, ServerFnErro
     }
     Ok(text)
 }
+use crate::shared::models::SupabaseProject;
+
+#[server]
+pub async fn test() -> Result<Vec<SupabaseProject>, ServerFnError> {
+    eprintln!("Session details - start");
+    use crate::server::api_request::api_request;
+    use leptos_axum::extract; // Import the extract function
+    use tower_sessions::Session;
+    let session: Session = extract().await?;
+
+    // Print the entire session struct using the Debug trait
+    eprintln!("Session details: {:?}", session);
+
+    let url = format!("{}/projects", "https://api.supabase.com/v1");
+    let api_response = api_request(session, url).await;
+
+    match api_response {
+        Ok(response) => {
+            let status = response.status();
+            if status.is_success() {
+                match response.json::<Vec<SupabaseProject>>().await {
+                    Ok(projects) => {
+                        eprintln!("Successfully parsed projects.{:?}", projects);
+                        Ok(projects) // Return the Vec<SupabaseProject> on success
+                    }
+                    Err(e) => {
+                        eprintln!("Error parsing JSON: {:?}", e);
+                        Err(ServerFnError::ServerError(format!(
+                            "Error parsing JSON: {:?}",
+                            e
+                        ))) // Return a ServerFnError with the string
+                    }
+                }
+            } else {
+                let status_code = status.as_u16();
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+                eprintln!(
+                    "HTTP request failed with status {}: {}",
+                    status_code, error_text
+                );
+                Err(ServerFnError::ServerError(format!(
+                    "HTTP request failed with status {}: {}",
+                    status_code, error_text
+                ))) // Return a ServerFnError with the string
+            }
+        }
+        Err(e) => {
+            eprintln!("Error from api_request: {}", e);
+            Err(ServerFnError::ServerError(format!(
+                "Error from api_request: {}",
+                e
+            ))) // Return a ServerFnError with the string
+        }
+    }
+}
