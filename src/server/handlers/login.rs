@@ -15,6 +15,26 @@ pub async fn login_handler(
 ) -> impl IntoResponse {
     eprintln!("Session ID at login: {:?}", session.id());
 
+    let access_token_option: Option<String> =
+        session.get("supabase_access_token").await.ok().flatten();
+    // In a real application, you'd also ideally store and check an 'expires_at' timestamp
+    // associated with the access token, as discussed previously, to ensure it's not merely present but also valid.
+    // For this example, we'll assume merely its presence implies validity for simplicity,
+    // but a robust solution would check expiration and potentially attempt refresh.
+
+    if let Some(access_token) = access_token_option {
+        // You might want to add a light validation here, e.g., if you can decode the JWT
+        // and check its expiration (`exp` claim) without calling Supabase.
+        // For a quick check, just having the token is often enough to skip.
+        // The actual validation (e.g., calling a Supabase API) will happen when the user tries
+        // to access a protected resource.
+        eprintln!("Access Token: {:?}", access_token);
+        eprintln!("Existing Supabase access token found in session. Skipping full OAuth flow.");
+        // If an access token exists, redirect to a dashboard or projects page
+        // instead of initiating a new OAuth flow.
+        return Redirect::to("/connect-supabase/projects").into_response();
+    }
+
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
     let csrf_token = CsrfToken::new_random();
 
@@ -57,5 +77,5 @@ pub async fn login_handler(
     }
 
     eprintln!("PKCE verifier and CSRF token stored in session. Redirecting to Supabase...");
-    Redirect::to(&constructed_url)
+    Redirect::to(&constructed_url).into_response()
 }
