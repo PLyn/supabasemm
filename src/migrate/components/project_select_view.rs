@@ -1,22 +1,35 @@
+use crate::shared::models::Project;
 use leptos::prelude::*;
 
 #[component]
 pub fn ProjectSelectForm(
     source_project_rw: RwSignal<String>,
     dest_project_rw: RwSignal<String>,
+    projects_rw: RwSignal<Vec<Project>>,
 ) -> impl IntoView {
     view!(
         <br />
         <label>Select Source Project</label>
         <select
-        on:change:target=move |ev| {
-            source_project_rw.set(ev.target().value().parse().unwrap());
-        }
-        prop:value=move || source_project_rw.get().to_string()
-        >
-        <option value="a">"a"</option>
-        <option value="b">"b"</option>
-        <option value="c">"c"</option>
+            on:change:target=move |ev| {
+                source_project_rw.set(ev.target().value().parse().unwrap());
+            }
+            prop:value=move || source_project_rw.get().to_string()>
+                <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
+                    {move || {
+                        projects_rw
+                            .get()
+                            .into_iter()
+                            .map(|project| {
+                                let display_text = format!(
+                                "{} - {} - {} - {}",
+                                project.id, project.name, project.region, project.status);
+                                view! { <option value={project.id.clone()}>{display_text}</option> }
+                            })
+                            .collect_view()
+                        }
+                    }
+                </Suspense>
         </select>
         <br />
 
@@ -35,9 +48,21 @@ pub fn ProjectSelectForm(
         }
         prop:value=move || dest_project_rw.get().to_string()
         >
-        <option value="0">"0"</option>
-        <option value="1">"1"</option>
-        <option value="2">"2"</option>
+        <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
+            {move || {
+                projects_rw
+                    .get()
+                    .into_iter()
+                    .map(|project| {
+                        let display_text = format!(
+                        "{} - {} - {} - {}",
+                        project.id, project.name, project.region, project.status);
+                        view! { <option value={project.id.clone()}>{display_text}</option> }
+                    })
+                    .collect_view()
+                }
+            }
+        </Suspense>
         </select>
         <br />
     )

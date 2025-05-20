@@ -1,42 +1,36 @@
+use crate::migrate::migrate_page::ConfigItem;
 use leptos::prelude::*;
 
 #[component]
-pub fn ConfigSelectForm(
-    auth_config_rw: RwSignal<bool>,
-    postgrest_config_rw: RwSignal<bool>,
-    edge_fn_config_rw: RwSignal<bool>,
-    secrets_config_rw: RwSignal<bool>,
-    storage_config_rw: RwSignal<bool>,
-    branches_config_rw: RwSignal<bool>,
-) -> impl IntoView {
+pub fn ConfigSelectForm(config_items_rw: [RwSignal<bool>; 6]) -> impl IntoView {
     view!(
         <br />
-        <input type="checkbox" name="test" bind:value=auth_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Auth as usize]/>
         <label>Migrate Auth Config</label>
         <br />
 
         <br />
-        <input type="checkbox" name="test" bind:value=postgrest_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Postgrest as usize]/>
         <label>Migrate PostgREST Config</label>
         <br />
 
         <br />
-        <input type="checkbox" name="test" bind:value=edge_fn_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::EdgeFunction as usize]/>
         <label>Migrate Edge Functions</label>
         <br />
 
         <br />
-        <input type="checkbox" name="test" bind:value=secrets_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Secrets as usize]/>
         <label>Migrate Supabase Project Secrets</label>
         <br />
 
         <br />
-        <input type="checkbox" name="test" bind:value=storage_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Storage as usize]/>
         <label>Migrate Storage config</label>
         <br />
 
         <br />
-        <input type="checkbox" name="test" bind:value=branches_config_rw/>
+        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Branches as usize]/>
         <label>Migrate branches</label>
         <br />
     )

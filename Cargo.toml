@@ -27,6 +27,8 @@ oauth2 = { version = "5.0.0", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
 gloo-timers = { version = "0.3.0", features = ["futures"] }
+futures = "0.3.31"
+time = "0.3.41"
 
 [features]
 ssr = [

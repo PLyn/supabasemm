@@ -1,5 +1,6 @@
 use super::server_models::{AppConfig, AppState};
-use tower_sessions::{MemoryStore, SessionManagerLayer};
+use time::Duration;
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 pub fn server_init(
 ) -> Result<(AppState, SessionManagerLayer<MemoryStore>), Box<dyn std::error::Error>> {
@@ -10,10 +11,11 @@ pub fn server_init(
     };
 
     let session_store = MemoryStore::default();
-
+    let session_expiry = Expiry::OnInactivity(Duration::hours(1));
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
-        .with_same_site(tower_sessions::cookie::SameSite::Lax);
+        .with_same_site(tower_sessions::cookie::SameSite::Lax)
+        .with_expiry(session_expiry);
 
     Ok((app_state, session_layer))
 }
