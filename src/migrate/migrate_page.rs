@@ -1,4 +1,4 @@
-use crate::monitor::functions::get_projects;
+use crate::migrate::functions::get_projects;
 use crate::shared::models::Project;
 
 use super::components::{AuthorizeForm, ConfigSelectForm, ProjectSelectForm};
@@ -29,6 +29,7 @@ pub fn MigratePage() -> impl IntoView {
     let is_authenticated_rw = RwSignal::new(false);
     let source_project_rw = RwSignal::new("".to_string());
     let dest_project_rw = RwSignal::new("".to_string());
+    let projects_validated_rw = RwSignal::new(false);
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
 
     let config_items_rw: [RwSignal<bool>; 6] = std::array::from_fn(|_| RwSignal::new(false));
@@ -49,9 +50,8 @@ pub fn MigratePage() -> impl IntoView {
             };
             is_authenticated_rw.set(is_authenticated);
         });
-    });
-    Effect::new(move |_| {
-        if is_authenticated_rw.get() {
+
+        if current_step == ViewSteps::Projects && projects_rw.get().is_empty() {
             spawn_local(async move {
                 let projects_result = get_projects().await;
                 match projects_result {
@@ -69,7 +69,8 @@ pub fn MigratePage() -> impl IntoView {
     view! {
         <h2>Supabase Migrate project configuration</h2>
         <h3>Authenticated? {is_authenticated_rw}</h3>
-
+        <label>{source_project_rw}</label>
+        <label>{dest_project_rw}</label>
         <Show when=move || !is_authenticated_rw.get() >
                 <>
                     <h2>Authorize</h2>
@@ -85,8 +86,12 @@ pub fn MigratePage() -> impl IntoView {
                             source_project_rw
                             dest_project_rw
                             projects_rw
+                            projects_validated_rw
                         />
-                        <button on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>Next</button>
+
+                        <Show when=move || projects_validated_rw.get() >
+                            <button on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>Next</button>
+                        </Show>          
                     </>
                 }.into_any(),
                 ViewSteps::Config => view! {

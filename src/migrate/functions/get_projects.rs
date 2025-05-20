@@ -1,6 +1,7 @@
 use crate::shared::models::Project;
 use leptos::prelude::*;
 
+
 #[server]
 pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
     // Imports
@@ -10,6 +11,11 @@ pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
     use tower_sessions::Session;
 
     let session: Session = extract().await?;
+
+    let access_token_option: Option<String> =
+        session.get("supabase_access_token").await.ok().flatten();
+
+    eprintln!("No session found. Making API call.");
     let url = format!("{}/projects", "https://api.supabase.com/v1");
     let api_response = get_api_call(session, url).await?;
 

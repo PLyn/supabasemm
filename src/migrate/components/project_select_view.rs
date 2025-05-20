@@ -6,8 +6,69 @@ pub fn ProjectSelectForm(
     source_project_rw: RwSignal<String>,
     dest_project_rw: RwSignal<String>,
     projects_rw: RwSignal<Vec<Project>>,
+    projects_validated_rw: RwSignal<bool>,
 ) -> impl IntoView {
+    let source_error_message = Memo::new(move |_| {
+        let source_id = source_project_rw.get();
+        let projects = projects_rw.get();
+
+        if source_id.is_empty() {
+            return "Please select a source project.".to_string();
+        }
+
+        if let Some(project) = projects.iter().find(|p| p.id == source_id) {
+            if project.status == "INACTIVE" {
+                return "Selected source project is INACTIVE.".to_string();
+            }
+        }
+        String::new() // No error
+    });
+
+    let dest_error_message = Memo::new(move |_| {
+        let dest_id = dest_project_rw.get();
+        let projects = projects_rw.get();
+
+        if dest_id.is_empty() {
+            return "Please select a destination project.".to_string();
+        }
+
+        if let Some(project) = projects.iter().find(|p| p.id == dest_id) {
+            if project.status == "INACTIVE" {
+                return "Selected destination project is INACTIVE.".to_string();
+            }
+        }
+        String::new() // No error
+    });
+
+    let general_error_message = Memo::new(move |_| {
+        let source_id = source_project_rw.get();
+        let dest_id = dest_project_rw.get();
+
+        if !source_id.is_empty() && !dest_id.is_empty() && source_id == dest_id {
+            return "Source and destination projects cannot be the same.".to_string();
+        }
+        String::new() // No error
+    });
+
+    let validation_check = Memo::new(move |_| {
+        if source_error_message.get().is_empty() && dest_error_message.get().is_empty() && general_error_message.get().is_empty() {
+            projects_validated_rw.set(true);
+           return "No Validation Errors Found. You may proceed!".to_string();
+        }
+        projects_validated_rw.set(false);
+        String::new() 
+    });
+
+
     view!(
+        <br />        
+
+        {move || (!general_error_message.get().is_empty()).then(|| view! { <p style="color: red;">{general_error_message.get()}</p> })}
+        
+        <br />
+
+        {move || (!source_error_message.get().is_empty()).then(|| view! { <p style="color: red;">{source_error_message.get()}</p> })}
+
         <br />
         <label>Select Source Project</label>
         <select
@@ -16,6 +77,9 @@ pub fn ProjectSelectForm(
             }
             prop:value=move || source_project_rw.get().to_string()>
                 <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
+                    <option value="" selected={move || source_project_rw.get().is_empty()}>
+                        "No option selected"
+                    </option>
                     {move || {
                         projects_rw
                             .get()
@@ -24,6 +88,7 @@ pub fn ProjectSelectForm(
                                 let display_text = format!(
                                 "{} - {} - {} - {}",
                                 project.id, project.name, project.region, project.status);
+                    
                                 view! { <option value={project.id.clone()}>{display_text}</option> }
                             })
                             .collect_view()
@@ -41,6 +106,10 @@ pub fn ProjectSelectForm(
         </div>
 
         <br />
+
+        {move || (!dest_error_message.get().is_empty()).then(|| view! { <p style="color: red;">{dest_error_message.get()}</p> })}
+
+        <br />
         <label>Select Destination Project</label>
         <select
         on:change:target=move |ev| {
@@ -49,6 +118,9 @@ pub fn ProjectSelectForm(
         prop:value=move || dest_project_rw.get().to_string()
         >
         <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
+            <option value="" selected={move || source_project_rw.get().is_empty()}>
+                "No option selected"
+            </option>
             {move || {
                 projects_rw
                     .get()
@@ -57,6 +129,7 @@ pub fn ProjectSelectForm(
                         let display_text = format!(
                         "{} - {} - {} - {}",
                         project.id, project.name, project.region, project.status);
+
                         view! { <option value={project.id.clone()}>{display_text}</option> }
                     })
                     .collect_view()
@@ -64,6 +137,10 @@ pub fn ProjectSelectForm(
             }
         </Suspense>
         </select>
+    
+        <br />
+
+        {move || (!validation_check.get().is_empty()).then(|| view! { <p style="color: green;">{validation_check.get()}</p> })}
         <br />
     )
 }
