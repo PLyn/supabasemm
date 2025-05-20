@@ -26,6 +26,7 @@ dotenvy = { version = "0.15.7", optional = true }
 oauth2 = { version = "5.0.0", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
+gloo-timers = { version = "0.3.0", features = ["futures"] }
 
 [features]
 ssr = [
