@@ -24,9 +24,9 @@ pub struct SecretJwtTemplate {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectMetrics {
     pub timestamp: String,
-    pub value: f64,
+    pub value: String,
     pub metric_name: String,
-    pub labels: Option<std::collections::HashMap<String, String>>,
+    pub labels: String,
 }
 
 #[server]

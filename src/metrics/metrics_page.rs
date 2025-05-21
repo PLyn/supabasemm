@@ -64,7 +64,6 @@ pub fn MetricsPage() -> impl IntoView {
                         project_metrics_rw.set(metrics);
                     }
                     Err(e) => {
-                        eprintln!("Error fetching metrics: {:?}", e);
                         metrics_error_rw.set(Some(format!("Failed to load metrics: {:?}", e)));
                     }
                 }
