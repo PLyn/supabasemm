@@ -5,7 +5,7 @@ use supabasemm::server::*;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use axum::{routing::get, Router};
-    use handlers::{callback_handler, login_handler, projects_handler};
+    use handlers::{callback_handler, login_handler};
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -23,7 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/connect-supabase/login", get(login_handler))
         .route("/connect-supabase/oauth2/callback", get(callback_handler))
-        .route("/connect-supabase/projects", get(projects_handler))
         .with_state(app_state)
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();

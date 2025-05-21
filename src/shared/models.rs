@@ -13,3 +13,11 @@ pub struct Project {
     pub region: String,
     pub status: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiffEntry {
+    pub config_type: String,
+    pub key: String,
+    pub source_value: String, 
+    pub dest_value: String,   
+}

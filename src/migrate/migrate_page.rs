@@ -1,5 +1,5 @@
 use crate::migrate::functions::get_projects;
-use crate::shared::models::Project;
+use crate::shared::models::{Project,DiffEntry};
 
 use super::components::{AuthorizeForm, ConfigSelectForm, ProjectSelectForm};
 use super::functions::{check_auth_status, generate_preview};
@@ -34,6 +34,7 @@ pub fn MigratePage() -> impl IntoView {
 
     let config_items_rw: [RwSignal<bool>; 6] = std::array::from_fn(|_| RwSignal::new(false));
     let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new());
+    let diff_results_rw: RwSignal<Vec<DiffEntry>> = RwSignal::new(Vec::new());
 
     let any_config_selected = Signal::derive(move || {
         config_items_rw.iter().any(|signal| signal.get())
@@ -114,7 +115,11 @@ pub fn MigratePage() -> impl IntoView {
                             <button on:click=move |_| {
                                 current_step_rw.set(ViewSteps::Loading);
                                 spawn_local(async move {
-                                    generate_preview(source_project_rw.get(), dest_project_rw.get()).await;
+                                    let diff_results_option = generate_preview(source_project_rw.get(), dest_project_rw.get()).await;
+                                    match diff_results_option {
+                                        Ok(diff_results) => diff_results_rw.set(diff_results),
+                                        Err(_) => diff_results_rw.set(Vec::new())
+                                    }
                                     current_step_rw.set(ViewSteps::Preview);
                                 });
                             }>Preview</button>
@@ -142,8 +147,38 @@ pub fn MigratePage() -> impl IntoView {
                     </>
                 }.into_any(),
                 ViewSteps::Preview => view! {
-                    <>
-                        "Preview screen"
+ <>
+                        <h3>Preview Results</h3>
+                        <Show
+                            when=move || !diff_results_rw.get().is_empty()
+                            fallback=move || view! { <p>"No significant differences found or an error occurred."</p> }
+                        >
+                            <table style="width:100%; border-collapse: collapse; border: 1px solid black;">
+                                <thead>
+                                    <tr>
+                                        <th style="padding: 2px; text-align: center; background-color: #f2f2f2; border: 1px solid black;">Config Item</th>
+                                        <th style="padding: 2px; text-align: center; background-color: #f2f2f2; border: 1px solid black;">Source Config</th>
+                                        <th style="padding: 2px; text-align: center; background-color: #f2f2f2; border: 1px solid black;">Destination Config</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <For
+                                        each=move || diff_results_rw.get().into_iter().enumerate()
+                                        key=|(idx, _)| *idx
+                                        children=move |(_, diff_text)| {
+                                            view! {
+                                                <tr>
+                                                    <td style="padding: 2px; text-align: left; border: 1px solid black;">{diff_text.config_type.to_uppercase()}:" "{diff_text.key}</td>
+                                                    <td style="padding: 2px; border: 1px solid black;">{diff_text.source_value}</td>
+                                                    <td style="padding: 2px; border: 1px solid black;">{diff_text.dest_value}</td>
+                                                </tr>
+                                            }
+                                        }
+                                    />
+                                </tbody>
+                            </table>
+                        </Show>
+                        <button on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>Back to Config</button>
                     </>
                 }.into_any()
             }}

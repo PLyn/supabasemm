@@ -166,12 +166,12 @@ pub async fn callback_handler(
         <!DOCTYPE html>
         <html>
         <head>
-            <meta http-equiv="refresh" content="0;url=/connect-supabase/projects">
+            <meta http-equiv="refresh" content="0;url=/migrate">
             <title>Redirecting...</title>
         </head>
         <body>
             <p>Authentication successful! Redirecting to your projects...</p>
-            <p>If you are not redirected, <a href="/connect-supabase/projects">click here</a>.</p>
+            <p>If you are not redirected, <a href="/migrate">click here</a>.</p>
         </body>
         </html>
         "#
