@@ -47,7 +47,6 @@ pub async fn login_handler(
         csrf_token_secret: Some(csrf_token.secret().to_string()),
     };
 
-    // Store data in session both as a struct and as individual values for redundancy
     if let Err(e) = session.insert("oauth_data", session_data).await {
         eprintln!("Failed to insert oauth_data into session: {:?}", e);
     }

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-// --- Configuration Struct ---
 #[derive(Clone)]
 pub struct AppConfig {
     pub client_id: String,
@@ -38,7 +37,6 @@ pub struct OAuthSessionData {
     pub csrf_token_secret: Option<String>,
 }
 
-// --- AppState for Axum handlers ---
 #[derive(Clone)]
 pub struct AppState {
     pub config: AppConfig,
@@ -47,5 +45,5 @@ pub struct AppState {
 #[derive(Debug, Deserialize)]
 pub struct CallbackParams {
     pub code: String,
-    pub state: String, // This is the CSRF token from Supabase
+    pub state: String,
 }

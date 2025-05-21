@@ -5,7 +5,7 @@ use tower_sessions::Session;
 use super::request_error::ApiRequestError;
 
 pub async fn get_api_call(session: Session, url: String) -> Result<Response, ApiRequestError> {
-    let token_option: Option<String> = session // <--- Variable name and type corrected
+    let token_option: Option<String> = session
         .get("supabase_access_token")
         .await
         .map_err(ApiRequestError::SessionError)?;
@@ -14,7 +14,7 @@ pub async fn get_api_call(session: Session, url: String) -> Result<Response, Api
         eprintln!("Access token found in session.");
         let client = reqwest::Client::new();
 
-        eprintln!("Fetching projects from: {}", url);
+        eprintln!("Fetching from: {}", url);
         let result = client
             .get(&url)
             .header(AUTHORIZATION, format!("Bearer {}", token))

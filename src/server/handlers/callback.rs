@@ -10,7 +10,6 @@ use oauth2::PkceCodeVerifier;
 use serde::Deserialize;
 use tower_sessions::Session;
 
-// GET /connect-supabase/oauth2/callback
 pub async fn callback_handler(
     Query(params): Query<CallbackParams>,
     State(app_state): State<AppState>,
@@ -20,9 +19,6 @@ pub async fn callback_handler(
         "OAuth callback received. Code: {}, State: {}",
         params.code, params.state
     );
-
-    // Debug session data
-    eprintln!("Session ID at callback: {:?}", session.id());
 
     let oauth_data: Option<OAuthSessionData> = match session.get("oauth_data").await {
         Ok(data) => {
@@ -39,7 +35,6 @@ pub async fn callback_handler(
         Some(data) => data,
         None => {
             eprintln!("No oauth_data found in session");
-            // Try alternative retrieval for PKCE and CSRF (direct keys)
             let pkce_verifier = session
                 .get::<String>("pkce_verifier_secret")
                 .await
@@ -67,9 +62,8 @@ pub async fn callback_handler(
         }
     };
 
-    session.remove::<OAuthSessionData>("oauth_data").await.ok(); // Use ok() to ignore errors
+    session.remove::<OAuthSessionData>("oauth_data").await.ok();
 
-    // Error handling for missing PKCE verifier
     if oauth_data.pkce_verifier_secret.is_none() {
         eprintln!("No PKCE verifier found in session");
         return Html(
@@ -80,7 +74,6 @@ pub async fn callback_handler(
     }
     let pkce_verifier_secret = oauth_data.pkce_verifier_secret.unwrap();
 
-    // Error handling for missing CSRF token
     if oauth_data.csrf_token_secret.is_none() {
         eprintln!("No CSRF token found in session");
         return Html(
@@ -104,7 +97,6 @@ pub async fn callback_handler(
 
     let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
 
-    // Use the reqwest client directly for token exchange
     let client = reqwest::Client::new();
 
     let params = [
@@ -144,7 +136,6 @@ pub async fn callback_handler(
     struct TokenResponse {
         access_token: String,
         refresh_token: Option<String>,
-        // Add other fields if needed
     }
 
     let token_data = match response.json::<TokenResponse>().await {

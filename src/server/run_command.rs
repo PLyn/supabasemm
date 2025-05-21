@@ -1,6 +1,6 @@
 use leptos::prelude::ServerFnError;
 use std::process::Stdio;
-use tokio::process::Command; // Assuming you have leptos in your Cargo.toml
+use tokio::process::Command;
 
 pub async fn run_command(command: String, db_string: String) -> Result<String, ServerFnError> {
     let mut cmd = Command::new("supabase");
@@ -46,7 +46,6 @@ pub async fn run_command(command: String, db_string: String) -> Result<String, S
                         }
 
                         if stderr_logs.is_empty() && !stdout_logs.is_empty() {
-                            // If command failed but only stdout has output, return that as error.
                             return Err(ServerFnError::new(stdout_logs));
                         }
 

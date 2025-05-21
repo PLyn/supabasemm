@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 #[server]
 pub async fn check_auth_status() -> Result<bool, ServerFnError> {
-    use leptos_axum::extract; // Import the extract function
+    use leptos_axum::extract;
     use tower_sessions::Session;
 
     let session: Session = extract().await?;

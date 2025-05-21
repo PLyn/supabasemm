@@ -35,6 +35,10 @@ pub fn MigratePage() -> impl IntoView {
     let config_items_rw: [RwSignal<bool>; 6] = std::array::from_fn(|_| RwSignal::new(false));
     let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new());
 
+    let any_config_selected = Signal::derive(move || {
+        config_items_rw.iter().any(|signal| signal.get())
+    });
+
     Effect::new(move |_| {
         //Only added here to make this effect re-run every time current_step_rw changes
         let current_step = current_step_rw.get();
@@ -42,24 +46,31 @@ pub fn MigratePage() -> impl IntoView {
         spawn_local(async move {
             let auth_status = check_auth_status().await;
             let is_authenticated = match auth_status {
-                Ok(status) => status, // If Ok, use the boolean status
+                Ok(status) => status,
                 Err(e) => {
-                    eprintln!("Error checking auth status: {:?}", e); // Log the error
+                    eprintln!("Error checking auth status: {:?}", e);
                     false
                 }
             };
             is_authenticated_rw.set(is_authenticated);
         });
+    });
 
+    Effect::new(move |_| {
+        //Only added here to make this effect re-run every time current_step_rw changes
+        let current_step = current_step_rw.get();
+        let is_authenticated = is_authenticated_rw.get();
         if current_step == ViewSteps::Projects && projects_rw.get().is_empty() {
             spawn_local(async move {
-                let projects_result = get_projects().await;
-                match projects_result {
-                    Ok(projects_list) => {
-                        projects_rw.set(projects_list);
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to fetch projects: {:?}", e);
+                if is_authenticated {
+                    let projects_result = get_projects().await;
+                    match projects_result {
+                        Ok(projects_list) => {
+                                projects_rw.set(projects_list);    
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to fetch projects: {:?}", e);
+                        }
                     }
                 }
             });
@@ -68,9 +79,7 @@ pub fn MigratePage() -> impl IntoView {
 
     view! {
         <h2>Supabase Migrate project configuration</h2>
-        <h3>Authenticated? {is_authenticated_rw}</h3>
-        <label>{source_project_rw}</label>
-        <label>{dest_project_rw}</label>
+
         <Show when=move || !is_authenticated_rw.get() >
                 <>
                     <h2>Authorize</h2>
@@ -100,13 +109,16 @@ pub fn MigratePage() -> impl IntoView {
                             config_items_rw />
 
                         <button on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>Back</button>
-                        <button on:click=move |_| {
-                            current_step_rw.set(ViewSteps::Loading);
-                            spawn_local(async move {
-                                generate_preview().await;
-                                current_step_rw.set(ViewSteps::Preview);
-                            });
-                        }>Preview</button>
+
+                        <Show when=move || any_config_selected.get() >
+                            <button on:click=move |_| {
+                                current_step_rw.set(ViewSteps::Loading);
+                                spawn_local(async move {
+                                    generate_preview(source_project_rw.get(), dest_project_rw.get()).await;
+                                    current_step_rw.set(ViewSteps::Preview);
+                                });
+                            }>Preview</button>
+                        </Show>
                     </>
                 }.into_any(),
                 ViewSteps::Loading => view! {

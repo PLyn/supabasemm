@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-//fixed urls for Supabase Management API calls.
 pub static AUTH_URL: &str = "https://api.supabase.com/v1/oauth/authorize";
 pub static TOKEN_URL: &str = "https://api.supabase.com/v1/oauth/token";
 pub static MGMT_API_BASE_URL: &str = "https://api.supabase.com/v1";
