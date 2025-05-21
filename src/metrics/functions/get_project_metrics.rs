@@ -1,7 +1,6 @@
-use crate::shared::models::Project;
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
-
+use super::api_call_with_header;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ApiKey {
     pub name: String, 
@@ -22,11 +21,12 @@ pub struct SecretJwtTemplate {
     pub role: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectMetrics {
     pub timestamp: String,
     pub value: f64,
     pub metric_name: String,
+    pub labels: Option<std::collections::HashMap<String, String>>,
 }
 
 #[server]
@@ -36,6 +36,7 @@ pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetri
     use crate::server::api::handle_response_error;
     use leptos_axum::extract;
     use tower_sessions::Session;
+    use base64::{engine::general_purpose, Engine as _};
 
     let session: Session = extract().await?;
 
@@ -78,23 +79,16 @@ pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetri
 
     let metrics_url = format!("https://{}.supabase.co/customer/v1/privileged/metrics", project_ref);
     eprintln!("Fetching metrics from: {}", metrics_url);
+ 
+    let auth_string = format!("service_role:{}", service_role_key);
+    let encoded_auth = general_purpose::STANDARD.encode(auth_string.as_bytes());
+    let auth_header_value = format!("Basic {}", encoded_auth);
 
-    //TODO - add service role key to header of HTTP request 
-    
-    let metrics_response = get_api_call(session, metrics_url).await?;
+    let metrics_response = api_call_with_header(metrics_url, auth_header_value).await;
 
-    if metrics_response.status().is_success() {
-        match metrics_response.json::<Vec<ProjectMetrics>>().await {
-            Ok(projects) => {
-                eprintln!("Successfully parsed projects.{:?}", projects);
-                Ok(projects)
-            }
-            Err(e) => {
-                eprintln!("Error parsing JSON: {:?}", e);
-                Err(ServerFnError::ServerError(format!("Error parsing JSON: {:?}", e)))
-            }
-        }
-    } else {
-        Err(handle_response_error(metrics_response).await)
+    match metrics_response {
+        Ok(response) => Ok(response),
+        
+        Err(e) => Err(ServerFnError::ServerError(format!("Error getting metrics: {:?}", e)))
     }
 }

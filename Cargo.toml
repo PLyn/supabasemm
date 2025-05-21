@@ -31,10 +31,18 @@ futures = "0.3.31"
 time = "0.3.41"
 serde_json = { version = "1.0.140", optional = true }
 json-structural-diff = { version = "0.2.0", optional = true }
+base64 = { version = "0.22.1", optional = true }
+regex = { version = "1.11.1", optional = true }
+chrono = { version = "0.4.41", optional = true }
+prometheus-parse = { version = "0.2.5", optional = true }
 
 [features]
 ssr = [
     "dep:dotenvy",
+    "dep:base64",
+    "dep:regex",
+    "dep:chrono",
+    "dep:prometheus-parse",
     "dep:json-structural-diff",
     "dep:serde_json",
     "dep:oauth2",

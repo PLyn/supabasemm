@@ -1,4 +1,3 @@
-use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use super::functions::{check_auth_status, get_project_metrics, get_projects};
@@ -9,18 +8,16 @@ use crate::metrics::functions::ProjectMetrics;
 pub fn MetricsPage() -> impl IntoView {
     let is_authenticated_rw = RwSignal::new(false);
     let selected_project_rw = RwSignal::new("".to_string());
-    let project_metrics_rw: RwSignal<Vec<ProjectMetrics>> = RwSignal::new(Vec::new()); // Initialize with an empty Vec
-    let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new()); // To store the list of projects for the dropdown
-    let loading_metrics_rw = RwSignal::new(false); // To show loading state for metrics
-    let metrics_error_rw = RwSignal::new(None::<String>); // To display errors
+    let project_metrics_rw: RwSignal<Vec<ProjectMetrics>> = RwSignal::new(Vec::new()); 
+    let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new()); 
+    let loading_metrics_rw = RwSignal::new(false); 
+    let metrics_error_rw = RwSignal::new(None::<String>); 
 
-    // Effect to check authentication status and load projects
     Effect::new(move |_| {
         // Only added here to make this effect re-run every time current_step_rw changes
         let current_project_ref = selected_project_rw.get();
         // This effect will run on initial load
         spawn_local(async move {
-            // Check authentication status
             let auth_status = check_auth_status().await;
             let is_authenticated = match auth_status {
                 Ok(status) => status,
@@ -33,7 +30,6 @@ pub fn MetricsPage() -> impl IntoView {
         });
     });
 
-        // Effect to check authentication status and load projects
     Effect::new(move |_| {
         //Only added here to make this effect re-run every time current_step_rw changes
         let current_project_ref = selected_project_rw.get();
@@ -53,14 +49,13 @@ pub fn MetricsPage() -> impl IntoView {
         }
     });
 
-    // Effect to fetch metrics when selected_project_rw or is_authenticated_rw changes
     Effect::new(move |_| {
         let current_project_ref = selected_project_rw.get();
         let authenticated = is_authenticated_rw.get();
 
         if !current_project_ref.is_empty() && authenticated {
             loading_metrics_rw.set(true);
-            metrics_error_rw.set(None); // Clear previous errors
+            metrics_error_rw.set(None);
             spawn_local(async move {
                 let metrics_result = get_project_metrics(current_project_ref).await;
                 loading_metrics_rw.set(false);
@@ -75,7 +70,6 @@ pub fn MetricsPage() -> impl IntoView {
                 }
             });
         } else {
-            // Clear metrics if no project is selected or not authenticated
             project_metrics_rw.set(Vec::new());
         }
     });
