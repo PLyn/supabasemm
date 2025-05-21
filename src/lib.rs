@@ -1,6 +1,8 @@
 mod home;
 mod migrate;
 mod monitor;
+mod metrics;
+
 pub mod routes;
 pub mod server;
 pub mod shared;

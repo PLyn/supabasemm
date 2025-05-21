@@ -1,8 +1,7 @@
-use crate::migrate::functions::get_projects;
 use crate::shared::models::{Project,DiffEntry};
 
 use super::components::{AuthorizeForm, ConfigSelectForm, ProjectSelectForm};
-use super::functions::{check_auth_status, generate_preview};
+use super::functions::{check_auth_status, generate_preview, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 

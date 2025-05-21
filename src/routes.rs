@@ -1,6 +1,7 @@
 use crate::home::HomePage;
 use crate::migrate::MigratePage;
 use crate::monitor::MonitorPage;
+use crate::metrics::MetricsPage;
 
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -46,6 +47,9 @@ pub fn App() -> impl IntoView {
         <a href="/migrate">Migrate</a>
         <div></div>
         <a href="/monitor">Monitor</a>
+        <div></div>
+        <a href="/metrics">Metrics</a>
+
 
         // content for this welcome page
         <Router>
@@ -54,6 +58,7 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("") view=HomePage/>
                     <Route path=StaticSegment("/migrate") view=MigratePage/>
                     <Route path=StaticSegment("/monitor") view=MonitorPage/>
+                    <Route path=StaticSegment("/metrics") view=MetricsPage/>
                 </Routes>
             </main>
         </Router>

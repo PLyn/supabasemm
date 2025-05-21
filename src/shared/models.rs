@@ -21,3 +21,10 @@ pub struct DiffEntry {
     pub source_value: String, 
     pub dest_value: String,   
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProjectMetrics {
+    pub cpu: String,
+    pub memory: String,
+    pub disk_burst_io: String,   
+}
