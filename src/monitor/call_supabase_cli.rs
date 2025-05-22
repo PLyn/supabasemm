@@ -1,8 +1,13 @@
-use leptos::prelude::ServerFnError;
-use std::process::Stdio;
-use tokio::process::Command;
+use leptos::prelude::*;
 
-pub async fn run_command(command: String, db_string: String) -> Result<String, ServerFnError> {
+#[server]
+pub async fn call_supabase_cli(
+    command: String,
+    db_string: String,
+) -> Result<String, ServerFnError> {
+    use std::process::Stdio;
+    use tokio::process::Command;
+    
     let mut cmd = Command::new("supabase");
     cmd.args(&[
         "inspect",

@@ -1,8 +1,8 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use super::functions::{check_auth_status, get_project_metrics, get_projects};
-use crate::shared::models::{Project};
-use crate::metrics::functions::ProjectMetrics;
+use super::functions::{get_project_metrics};
+use crate::shared::server_functions::{check_auth_status, get_projects};
+use crate::shared::models::{Project, ProjectMetrics};
 
 #[component]
 pub fn MetricsPage() -> impl IntoView {
@@ -10,67 +10,28 @@ pub fn MetricsPage() -> impl IntoView {
     let selected_project_rw = RwSignal::new("".to_string());
     let project_metrics_rw: RwSignal<Vec<ProjectMetrics>> = RwSignal::new(Vec::new()); 
     let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new()); 
-    let loading_metrics_rw = RwSignal::new(false); 
-    let metrics_error_rw = RwSignal::new(None::<String>); 
 
     Effect::new(move |_| {
-        // Only added here to make this effect re-run every time current_step_rw changes
-        let current_project_ref = selected_project_rw.get();
-        // This effect will run on initial load
         spawn_local(async move {
-            let auth_status = check_auth_status().await;
-            let is_authenticated = match auth_status {
-                Ok(status) => status,
-                Err(e) => {
-                    eprintln!("Error checking auth status: {:?}", e);
-                    false
-                }
+            let auth_check_result = check_auth_status().await;
+            if let Ok(auth_status) = auth_check_result {
+                is_authenticated_rw.set(auth_status);
             };
-            is_authenticated_rw.set(is_authenticated);
-        });
-    });
 
-    Effect::new(move |_| {
-        //Only added here to make this effect re-run every time current_step_rw changes
-        let current_project_ref = selected_project_rw.get();
-        let is_authenticated = is_authenticated_rw.get();
-        if is_authenticated && projects_rw.get().is_empty() {
-            spawn_local(async move {
+            if is_authenticated_rw.get_untracked() && projects_rw.get_untracked().is_empty(){
                 let projects_result = get_projects().await;
-                match projects_result {
-                    Ok(projects_list) => {
-                        projects_rw.set(projects_list);    
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to fetch projects: {:?}", e);
-                    }
-                }
-            });
-        }
-    });
+                if let Ok(projects_list) = projects_result {
+                    projects_rw.set(projects_list);
+                };
+            }
 
-    Effect::new(move |_| {
-        let current_project_ref = selected_project_rw.get();
-        let authenticated = is_authenticated_rw.get();
-
-        if !current_project_ref.is_empty() && authenticated {
-            loading_metrics_rw.set(true);
-            metrics_error_rw.set(None);
-            spawn_local(async move {
-                let metrics_result = get_project_metrics(current_project_ref).await;
-                loading_metrics_rw.set(false);
-                match metrics_result {
-                    Ok(metrics) => {
-                        project_metrics_rw.set(metrics);
-                    }
-                    Err(e) => {
-                        metrics_error_rw.set(Some(format!("Failed to load metrics: {:?}", e)));
-                    }
-                }
-            });
-        } else {
-            project_metrics_rw.set(Vec::new());
-        }
+            if is_authenticated_rw.get_untracked() && !selected_project_rw.get_untracked().is_empty() {
+                let metrics_result = get_project_metrics(selected_project_rw.get()).await;
+                if let Ok(metrics) = metrics_result {
+                    project_metrics_rw.set(metrics);
+                };
+            }
+        });
     });
 
     view! {
@@ -108,42 +69,33 @@ pub fn MetricsPage() -> impl IntoView {
 
         <h3>"Project Metrics"</h3>
         {move || {
-            if loading_metrics_rw.get() {
-                view! { <p>"Loading metrics..."</p> }.into_any()
-            } else if let Some(error) = metrics_error_rw.get() {
-                view! { <p style="color: red;">{error}</p> }.into_any()
-            } else {
-                let metrics = project_metrics_rw.get();
-                if metrics.is_empty() {
-                    view! { <p>"No metrics available for this project."</p> }.into_any()
-                } else {
-                    view! {
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>"Metric Name"</th>
-                                    <th>"Value"</th>
-                                    <th>"Timestamp"</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {metrics
-                                    .into_iter()
-                                    .map(|metric| {
-                                        view! {
-                                            <tr>
-                                                <td>{metric.metric_name}</td>
-                                                <td>{metric.value}</td>
-                                                <td>{metric.timestamp}</td>
-                                            </tr>
-                                        }
-                                    })
-                                    .collect_view()}
-                            </tbody>
-                        </table>
-                    }.into_any()
-                }
+            let metrics = project_metrics_rw.get();
+                view! {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>"Metric Name"</th>
+                                <th>"Value"</th>
+                                <th>"Timestamp"</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {metrics
+                                .into_iter()
+                                .map(|metric| {
+                                    view! {
+                                        <tr>
+                                            <td>{metric.metric_name}</td>
+                                            <td>{metric.value}</td>
+                                            <td>{metric.timestamp}</td>
+                                        </tr>
+                                    }
+                                })
+                                .collect_view()}
+                        </tbody>
+                    </table>
+                }.into_any()
             }
-        }}
+        }
     }
 }

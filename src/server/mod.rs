@@ -3,8 +3,6 @@ pub mod api;
 #[cfg(feature = "ssr")]
 pub mod handlers;
 #[cfg(feature = "ssr")]
-pub mod run_command;
-#[cfg(feature = "ssr")]
 pub mod server_init;
 #[cfg(feature = "ssr")]
 pub mod server_models;

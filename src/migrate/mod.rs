@@ -3,4 +3,3 @@ pub(super) mod functions;
 mod migrate_page;
 
 pub use migrate_page::MigratePage;
-pub use migrate_page::ConfigItem;

@@ -1,6 +1,6 @@
 use leptos::prelude::*;
-use crate::migrate::functions::api_call;
 use crate::shared::models::DiffEntry;
+use crate::shared::server_functions::mgmt_api_call;
 
 #[server]
 pub async fn generate_preview(
@@ -9,54 +9,29 @@ pub async fn generate_preview(
 ) -> Result<Vec<DiffEntry>, ServerFnError> {
     use serde_json::Value;
     use json_structural_diff::JsonDiff;
-    use futures::future::join_all;
-    use std::future::Future; 
-    use std::pin::Pin;
     
     let mut diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut async_api_requests: Vec<Pin<Box<dyn Future<Output = (String, Result<String, ServerFnError>, Result<String, ServerFnError>)> + Send>>> = Vec::new();
+    let mut results: Vec<(String, Result<String, ServerFnError>, Result<String, ServerFnError>)> = Vec::new();
 
-    let source_auth_url = format!("/projects/{}/config/auth", source_project_rw);
-    let dest_auth_url = format!("/projects/{}/config/auth", dest_project_rw);
-    async_api_requests.push(Box::pin(async move {
-        let source_config_result = api_call(source_auth_url).await;
-        let dest_config_result = api_call(dest_auth_url).await;
-        ("Auth".to_string(), source_config_result, dest_config_result)
-    }));
+    let source_config = mgmt_api_call(format!("/projects/{}/config/auth", source_project_rw)).await;
+    let dest_config = mgmt_api_call(format!("/projects/{}/config/auth", dest_project_rw)).await;
+    results.push(("Auth".to_string(), source_config, dest_config));
 
-    let source_postgrest_url = format!("/projects/{}/postgrest", source_project_rw);
-    let dest_postgrest_url = format!("/projects/{}/postgrest", dest_project_rw);
-    async_api_requests.push(Box::pin(async move {
-        let source_config_result = api_call(source_postgrest_url).await;
-        let dest_config_result = api_call(dest_postgrest_url).await;
-        ("Postgrest".to_string(), source_config_result, dest_config_result)
-    }));
+    let source_config = mgmt_api_call(format!("/projects/{}/postgrest", source_project_rw)).await;
+    let dest_config = mgmt_api_call(format!("/projects/{}/postgrest", dest_project_rw)).await;
+    results.push(("Postgrest".to_string(), source_config, dest_config));
 
-    let source_functions_url = format!("/projects/{}/functions", source_project_rw);
-    let dest_functions_url = format!("/projects/{}/functions", dest_project_rw);
-    async_api_requests.push(Box::pin(async move {
-        let source_config_result = api_call(source_functions_url).await;
-        let dest_config_result = api_call(dest_functions_url).await;
-        ("Edge Functions".to_string(), source_config_result, dest_config_result)
-    }));
+    let source_config = mgmt_api_call(format!("/projects/{}/functions", source_project_rw)).await;
+    let dest_config = mgmt_api_call(format!("/projects/{}/functions", dest_project_rw)).await;
+    results.push(("Edge Functions".to_string(), source_config, dest_config));
 
-    let source_secrets_url = format!("/projects/{}/secrets", source_project_rw);
-    let dest_secrets_url = format!("/projects/{}/secrets", dest_project_rw);
-    async_api_requests.push(Box::pin(async move {
-        let source_config_result = api_call(source_secrets_url).await;
-        let dest_config_result = api_call(dest_secrets_url).await;
-        ("Secrets".to_string(), source_config_result, dest_config_result)
-    }));
+    let source_config = mgmt_api_call(format!("/projects/{}/secrets", source_project_rw)).await;
+    let dest_config = mgmt_api_call(format!("/projects/{}/secrets", dest_project_rw)).await;
+    results.push(("Project Secrets".to_string(), source_config, dest_config));
 
-    let source_postgres_url = format!("/projects/{}/config/database/postgres", source_project_rw);
-    let dest_postgres_url = format!("/projects/{}/config/database/postgres", dest_project_rw);
-    async_api_requests.push(Box::pin(async move {
-        let source_config_result = api_call(source_postgres_url).await;
-        let dest_config_result = api_call(dest_postgres_url).await;
-        ("postgres".to_string(), source_config_result, dest_config_result)
-    }));
-
-    let results = join_all(async_api_requests).await;
+    let source_config = mgmt_api_call(format!("/projects/{}/config/database/postgres", source_project_rw)).await;
+    let dest_config = mgmt_api_call(format!("/projects/{}/config/database/postgres", dest_project_rw)).await;
+    results.push(("Postgres".to_string(), source_config, dest_config));
 
     for (config_type, source_config_result, dest_config_result) in results {
         match (source_config_result, dest_config_result) {

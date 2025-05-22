@@ -1,4 +1,3 @@
-pub(super) mod components;
 pub(super) mod functions;
 mod metrics_page;
 
