@@ -1,6 +1,4 @@
 #[cfg(feature = "ssr")]
-pub mod api;
-#[cfg(feature = "ssr")]
 pub mod handlers;
 #[cfg(feature = "ssr")]
 pub mod server_init;
