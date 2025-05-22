@@ -28,12 +28,8 @@ pub async fn mgmt_api_call(url: String) -> Result<String, ServerFnError> {
 
     if api_response.status().is_success() {
         match api_response.text().await { 
-            Ok(text) => {
-                Ok(text)
-            }
-            Err(e) => {
-                Err(ServerFnError::ServerError(format!("Error reading response body as text: {:?}", e)))
-            }
+            Ok(text) => Ok(text),
+            Err(e) => Err(ServerFnError::ServerError(format!("Error reading response body as text: {:?}", e)))
         }
     } else {
         let status_code = api_response.status().as_u16();

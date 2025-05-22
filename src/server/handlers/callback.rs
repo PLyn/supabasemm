@@ -21,14 +21,8 @@ pub async fn callback_handler(
     );
 
     let oauth_data: Option<OAuthSessionData> = match session.get("oauth_data").await {
-        Ok(data) => {
-            eprintln!("Session get successful, data: {:?}", data);
-            data
-        }
-        Err(e) => {
-            eprintln!("Session get error: {:?}", e);
-            None
-        }
+        Ok(data) => data,
+        Err(e) => None
     };
 
     let oauth_data = match oauth_data {

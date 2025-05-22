@@ -24,58 +24,32 @@ pub struct SecretJwtTemplate {
 
 #[server]
 pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetrics>, ServerFnError> {
-    // Imports
-    use crate::server::api::get_api_call;
+    use crate::shared::server_functions::mgmt_api_call;
     use crate::shared::server_functions::mgmt_api_call_with_header;
-    use leptos_axum::extract;
-    use tower_sessions::Session;
     use base64::{engine::general_purpose, Engine as _};
     use prometheus_parse::{self, Value, Scrape};
     use chrono::Utc;
 
-    let session: Session = extract().await?;
-
-    let get_api_key_url = format!("https://api.supabase.com/v1/projects/{}/api-keys?reveal=true", project_ref);
-
-    let api_keys_response = get_api_call(session.clone(), get_api_key_url).await?;
-
     let mut service_role_key_option: Option<String> = None;
     let service_role_key: String;
+    let get_api_key_url = format!("https://api.supabase.com/v1/projects/{}/api-keys?reveal=true", project_ref);
+    let text_response = mgmt_api_call(get_api_key_url).await?;
 
-    if api_keys_response.status().is_success() {
-        match api_keys_response.json::<Vec<ApiKey>>().await {
-            Ok(api_keys) => {
-                eprintln!("Successfully parsed API keys: {:?}", api_keys);
-                for key in api_keys {
-                    if key.name == "service_role" {
-                        service_role_key_option = Some(key.api_key);
-                        break;
-                    }
+    match serde_json::from_str::<Vec<ApiKey>>(&text_response) {
+        Ok(api_keys) => {
+            for key in api_keys {
+                if key.name == "service_role" {
+                    service_role_key_option = Some(key.api_key);
+                    break;
                 }
             }
-            Err(e) => {
-                eprintln!("Error parsing API keys JSON: {:?}", e);
-                return Err(ServerFnError::ServerError(format!("Error parsing API keys JSON: {:?}", e)));
-            }
         }
-    } else {   
-        let status_code = api_keys_response.status().as_u16();
-        let error_text = api_keys_response
-            .text()
-            .await
-            .unwrap_or_else(|e| format!("Error reading response body: {}", e)); 
-
-        return Err(ServerFnError::ServerError(format!("HTTP request failed with status {}: {}", status_code, error_text)))
+        Err(e) => return Err(ServerFnError::ServerError(format!("Error parsing API keys JSON: {:?}", e)))
     }
 
     match service_role_key_option {
-        Some(key) => {
-            eprintln!("Found service_role_key: {:?}", key);
-            service_role_key = key;
-        }
-        None => {
-            return Err(ServerFnError::ServerError("Service role API key not found".to_string()));
-        }
+        Some(key) => service_role_key = key,
+        None => return Err(ServerFnError::ServerError("Service role API key not found".to_string()))  
     }
 
     let metrics_url = format!("https://{}.supabase.co/customer/v1/privileged/metrics", project_ref);
@@ -120,15 +94,9 @@ pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetri
                         "node_disk_write_time_seconds_total",
                         "node_disk_io_time_seconds_total",
                         "node_disk_io_time_weighted_seconds_total",
-                        // EBS Balance (AWS metrics)
-                        "aws_ebs_burst_balance",
-                        "aws_ebs_io_balance",
-                        "aws_ebs_byte_balance",
                     ];
                     for sample in parsed_scrape.samples {
-                        // Filter for desired metrics
                         if desired_metrics.contains(&sample.metric.as_str()) {
-                            // For disk metrics, also check the mountpoint label
                             if sample.metric.starts_with("node_filesystem_") {
                                 let mountpoint = sample.labels.get("mountpoint");
                                 if mountpoint != Some(&"/".to_string()) && mountpoint != Some(&"/data".to_string()) {
@@ -149,7 +117,6 @@ pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetri
                                 }
                             };
 
-                            // Convert labels HashMap to a String for storage, or parse them as needed
                             let labels_string: String = sample.labels
                                 .iter()
                                 .map(|(key, value)| format!("{}=\"{}\"", key, value))
@@ -160,11 +127,10 @@ pub async fn get_project_metrics(project_ref: String) -> Result<Vec<ProjectMetri
                                 timestamp: now.clone(),
                                 value: value.to_string(),
                                 metric_name: sample.metric.clone(),
-                                labels: labels_string, // Store labels as a string
+                                labels: labels_string,
                             });
                         }
                     }
-                    eprintln!("For loop end");
                     Ok(project_metrics_list)
                 }
                 Err(e) => Err(ServerFnError::ServerError(format!("Error parsing Prometheus metrics: {:?}", e))),
