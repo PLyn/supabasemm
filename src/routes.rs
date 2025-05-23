@@ -40,16 +40,16 @@ pub fn App() -> impl IntoView {
 
         // sets the document title
         <Title text="Supa Migrate and Monitor"/>
-
-        <h1>"Supabase M&M"</h1>
-        <a href="/">Home</a>
-        <div></div>
-        <a href="/migrate">Migrate</a>
-        <div></div>
-        <a href="/monitor">Monitor</a>
-        <div></div>
-        <a href="/metrics">Metrics</a>
-
+        <div class="flex px-4">
+            <h1>"Supabase M&M"</h1>
+            <a href="/">Home</a>
+            <div></div>
+            <a href="/migrate">Migrate</a>
+            <div></div>
+            <a href="/monitor">Monitor</a>
+            <div></div>
+            <a href="/metrics">Metrics</a>
+        </div>
 
         // content for this welcome page
         <Router>
