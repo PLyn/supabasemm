@@ -29,11 +29,11 @@ reqwest = { version = "0.12.15", features = ["json"], optional = true }
 gloo-timers = { version = "0.3.0", features = ["futures"] }
 futures = "0.3.31"
 time = "0.3.41"
-serde_json = { version = "1.0.140", optional = true }
+serde_json = { version = "1.0.140"}
 json-structural-diff = { version = "0.2.0", optional = true }
 base64 = { version = "0.22.1", optional = true }
 regex = { version = "1.11.1", optional = true }
-chrono = { version = "0.4.41", optional = true }
+chrono = { version = "0.4.41", features = ["serde"] }
 prometheus-parse = { version = "0.2.5", optional = true }
 
 [features]
@@ -41,10 +41,8 @@ ssr = [
     "dep:dotenvy",
     "dep:base64",
     "dep:regex",
-    "dep:chrono",
     "dep:prometheus-parse",
     "dep:json-structural-diff",
-    "dep:serde_json",
     "dep:oauth2",
     "dep:reqwest",
     "dep:tower-sessions",
@@ -61,7 +59,6 @@ hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
 oauth2 = ["dep:oauth2"]
 reqwest = ["dep:reqwest"]
 tower-sessions = ["dep:tower-sessions"]
-serde_json = ["dep:serde_json"]
 json-structural-diff = ["dep:json-structural-diff"]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

@@ -1,6 +1,5 @@
 use leptos::prelude::*;
 use crate::shared::models::DiffEntry;
-use crate::shared::server_functions::mgmt_api_call;
 
 #[server]
 pub async fn generate_preview(
@@ -9,6 +8,7 @@ pub async fn generate_preview(
 ) -> Result<Vec<DiffEntry>, ServerFnError> {
     use serde_json::Value;
     use json_structural_diff::JsonDiff;
+    use crate::shared::server_functions::mgmt_api_call;
     
     let mut diff_entries: Vec<DiffEntry> = Vec::new();
     let mut results: Vec<(String, Result<String, ServerFnError>, Result<String, ServerFnError>)> = Vec::new();
