@@ -29,3 +29,10 @@ pub struct ProjectMetrics {
     pub metric_name: String,
     pub labels: String,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ApiKeyStruct {
+    pub name: String,
+    pub api_key: String,
+    pub id: Option<String>
+}
