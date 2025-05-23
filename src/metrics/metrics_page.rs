@@ -16,7 +16,6 @@ pub fn MetricsPage() -> impl IntoView {
     
     let websocket_enabled_rw = RwSignal::new(false);
     let websocket_status_rw = RwSignal::new("Disconnected".to_string());
-    let last_update_rw = RwSignal::new("Never".to_string());
     
     let seconds_until_update_rw = RwSignal::new(METRICS_REFRESH_TIME);
     let countdown_interval_handle_rw: RwSignal<Option<IntervalHandle>> = RwSignal::new(None);
@@ -98,11 +97,7 @@ pub fn MetricsPage() -> impl IntoView {
                         match msg {
                             Ok(metrics) => {
                                 project_metrics_rw.set(metrics);
-                                let now = chrono::Utc::now();
-                                let time_str = now.format("%H:%M:%S").to_string();
-                                last_update_rw.set(time_str);
                                 websocket_status_rw.set("Connected - Live updates active".to_string());
-                                
                                 seconds_until_update_rw.set(METRICS_REFRESH_TIME);
                             }
                             Err(e) => {
@@ -129,7 +124,6 @@ pub fn MetricsPage() -> impl IntoView {
     let stop_websocket =  move |_: leptos::ev::MouseEvent| {
         websocket_enabled_rw.set(false);
         websocket_status_rw.set("Disconnected".to_string());
-        last_update_rw.set("Stopped".to_string());
         stop_countdown();
     };
 
@@ -170,7 +164,6 @@ pub fn MetricsPage() -> impl IntoView {
         <div style="background-color: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px;">
             <h4>"Live Metrics via WebSocket"</h4>
             <p><strong>"Status: "</strong> {move || websocket_status_rw.get()}</p>
-            <p><strong>"Last Update: "</strong> {move || last_update_rw.get()}</p>
             
             <Show when=move || websocket_enabled_rw.get()>
                 <p style="color: #28a745; font-weight: bold;">
