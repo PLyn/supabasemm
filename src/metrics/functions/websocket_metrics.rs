@@ -25,7 +25,7 @@ pub async fn websocket_metrics_stream(
 
     tokio::spawn(async move {
         let mut project_ref: Option<String> = None;
-        let mut metrics_interval = interval(Duration::from_secs(60)); // 1 minute
+        let mut metrics_interval = interval(Duration::from_secs(60));
         
         loop {
             tokio::select! {

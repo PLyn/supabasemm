@@ -22,7 +22,7 @@ pub struct DiffEntry {
     pub dest_value: String,   
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProjectMetrics {
     pub timestamp: String,
     pub value: String,
