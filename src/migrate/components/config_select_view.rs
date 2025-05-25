@@ -1,37 +1,24 @@
-use crate::migrate::migrate_page::ConfigItem;
+use crate::migrate::migrate_page::{ConfigNames, ConfigState};
 use leptos::prelude::*;
 
 #[component]
-pub fn ConfigSelectForm(config_items_rw: [RwSignal<bool>; 6]) -> impl IntoView {
+pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView {
     view!(
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Auth as usize]/>
-        <label>Migrate Auth Config</label>
-        <br />
-
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Postgrest as usize]/>
-        <label>Migrate PostgREST Config</label>
-        <br />
-
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::EdgeFunction as usize]/>
-        <label>Migrate Edge Functions</label>
-        <br />
-
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Secrets as usize]/>
-        <label>Migrate Supabase Project Secrets</label>
-        <br />
-
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Storage as usize]/>
-        <label>Migrate Storage config</label>
-        <br />
-
-        <br />
-        <input type="checkbox" name="test" bind:value=config_items_rw[ConfigItem::Branches as usize]/>
-        <label>Migrate branches</label>
-        <br />
+        <div class="flex flex-col w-1/2 mx-auto">
+            {config_state_rw.get().items.iter()
+                .zip(config_state_rw.get().values.iter())
+                .map(|(item, value_signal)| view! {
+                    <div class="my-2">
+                        <input 
+                            class="checkbox checkbox-info"
+                            type="checkbox" 
+                            name=item.name
+                            bind:value=*value_signal
+                        />
+                        <label class="ml-2">{item.label}</label>
+                    </div>
+                })
+                .collect_view()}
+        </div>
     )
 }

@@ -5,6 +5,7 @@ use super::functions::generate_preview;
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use std::array;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ViewSteps {
@@ -14,14 +15,44 @@ pub enum ViewSteps {
     Preview,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum ConfigItem {
-    Auth = 0,
-    Postgrest = 1,
-    EdgeFunction = 2,
-    Secrets = 3,
-    Storage = 4,
-    Branches = 5,
+#[derive(Clone, Copy)]
+pub struct ConfigNames {
+    pub name: &'static str,
+    pub label: &'static str,
+}
+
+impl ConfigNames {
+    const fn new(name: &'static str, label: &'static str) -> Self {
+        Self { name, label }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ConfigState {
+    pub items: [ConfigNames; 6],
+    pub values: [RwSignal<bool>; 6],
+}
+
+impl ConfigState {
+    pub fn new() -> Self {
+        Self {
+            items: [
+                ConfigNames::new("auth", "Migrate Auth Config"),
+                ConfigNames::new("postgrest", "Migrate Postgrest Config"),
+                ConfigNames::new("edge_function", "Migrate Edge Function Config"),
+                ConfigNames::new("secrets", "Migrate Secrets Config"),
+                ConfigNames::new("storage", "Migrate Storage Config"),
+                ConfigNames::new("branches", "Migrate Branches Config"),
+            ],
+            values: std::array::from_fn(|_| RwSignal::new(false)),
+        }
+    }
+
+    pub fn any_config_selected(config_state: ConfigState) -> Signal<bool> {
+        Signal::derive(move || {
+            config_state.values.iter().any(|signal| signal.get())
+        })
+    }
 }
 
 #[component]
@@ -37,10 +68,7 @@ pub fn MigratePage() -> impl IntoView {
     
     let preview_results_rw: RwSignal<Vec<DiffEntry>> = RwSignal::new(Vec::new());
 
-    let config_items_rw: [RwSignal<bool>; 6] = std::array::from_fn(|_| RwSignal::new(false));
-    let any_config_selected = Signal::derive(move || {
-        config_items_rw.iter().any(|signal| signal.get())
-    });
+    let config_state_rw: RwSignal<ConfigState> = RwSignal::new(ConfigState::new());
 
     Effect::new(move |_| {
         spawn_local(async move {
@@ -59,19 +87,18 @@ pub fn MigratePage() -> impl IntoView {
     });
 
     view! {
-        <h2>Supabase Migrate project configuration</h2>
-
         <Show when=move || !is_authenticated.get() >
                 <>
-                    <h2>Authorize</h2>
-                    <br />
-                    <button on:click=move |_| { window().location().set_href("/connect-supabase/login").unwrap(); }>
-                        Sign in with Supabase
-                    </button>
-                    <br />
+                    <div class="flex flex-col items-center">
+                        <h2 class="text-3xl font-bold mt-4">"Supabase Migrate project configuration"</h2>
+                        <h2 class="py-4">"Sign in using Supabase to allow access to your projects using the Management API"</h2>
+                        <button class="btn btn-primary"
+                            on:click=move |_| { window().location().set_href("/connect-supabase/login").unwrap(); }>
+                            Sign in with Supabase
+                        </button>
+                    </div>
                 </>
         </Show>
-
         <Show when=move || is_authenticated.get() >
             {move || match current_step_rw.get() {
                 ViewSteps::Projects => view! {
@@ -83,18 +110,25 @@ pub fn MigratePage() -> impl IntoView {
                             set_is_project_select_validated />
 
                         <Show when=move || is_projects_select_validated.get() >
-                            <button on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>Next</button>
+                            <button class="btn btn-primary"
+                                on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>
+                                Next
+                            </button>
                         </Show>          
                     </>
                 }.into_any(),
                 ViewSteps::Config => view! {
                     <>
                         <ConfigSelectForm
-                            config_items_rw />
-                        <button on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>Back</button>
+                            config_state_rw />
+                        <button class="btn btn-secondary"
+                            on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>
+                            Back
+                        </button>
 
-                        <Show when=move || any_config_selected.get() >
-                            <button on:click=move |_| {
+                        <Show when=move || ConfigState::any_config_selected(config_state_rw.get()).get()  >
+                            <button class="btn btn-primary" 
+                                on:click=move |_| {
                                 current_step_rw.set(ViewSteps::Loading);
                                 spawn_local(async move {
                                     let diff_results_option = generate_preview(source_project_rw.get_untracked(), dest_project_rw.get_untracked()).await;
@@ -121,7 +155,7 @@ pub fn MigratePage() -> impl IntoView {
                     </>
                 }.into_any(),
                 ViewSteps::Preview => view! {
- <>
+                    <>
                         <h3>Preview Results</h3>
                         <Show
                             when=move || !preview_results_rw.get().is_empty()
