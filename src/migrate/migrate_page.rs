@@ -5,7 +5,6 @@ use super::functions::generate_preview;
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use std::array;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ViewSteps {
@@ -16,20 +15,8 @@ pub enum ViewSteps {
 }
 
 #[derive(Clone, Copy)]
-pub struct ConfigNames {
-    pub name: &'static str,
-    pub label: &'static str,
-}
-
-impl ConfigNames {
-    const fn new(name: &'static str, label: &'static str) -> Self {
-        Self { name, label }
-    }
-}
-
-#[derive(Clone, Copy)]
 pub struct ConfigState {
-    pub items: [ConfigNames; 6],
+    pub items: [(&'static str, &'static str); 6],
     pub values: [RwSignal<bool>; 6],
 }
 
@@ -37,21 +24,18 @@ impl ConfigState {
     pub fn new() -> Self {
         Self {
             items: [
-                ConfigNames::new("auth", "Migrate Auth Config"),
-                ConfigNames::new("postgrest", "Migrate Postgrest Config"),
-                ConfigNames::new("edge_function", "Migrate Edge Function Config"),
-                ConfigNames::new("secrets", "Migrate Secrets Config"),
-                ConfigNames::new("storage", "Migrate Storage Config"),
-                ConfigNames::new("branches", "Migrate Branches Config"),
+                ("auth", "Migrate Auth Config"),
+                ("postgrest", "Migrate Postgrest Config"),
+                ("edge_function", "Migrate Edge Function Config"),
+                ("secrets", "Migrate Secrets Config"),
+                ("storage", "Migrate Storage Config"),
+                ("branches", "Migrate Branches Config"),
             ],
             values: std::array::from_fn(|_| RwSignal::new(false)),
         }
     }
-
-    pub fn any_config_selected(config_state: ConfigState) -> Signal<bool> {
-        Signal::derive(move || {
-            config_state.values.iter().any(|signal| signal.get())
-        })
+    pub fn any_config_selected(self) -> bool {
+            self.values.iter().any(|signal| signal.get())
     }
 }
 
@@ -126,7 +110,7 @@ pub fn MigratePage() -> impl IntoView {
                             Back
                         </button>
 
-                        <Show when=move || ConfigState::any_config_selected(config_state_rw.get()).get()  >
+                        <Show when=move || config_state_rw.get().any_config_selected() >
                             <button class="btn btn-primary" 
                                 on:click=move |_| {
                                 current_step_rw.set(ViewSteps::Loading);
