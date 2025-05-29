@@ -15,8 +15,15 @@ pub struct Project {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProjectConfig {
+    pub name: String,
+    pub diffs: Vec<DiffEntry>,
+    pub config_json: String
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiffEntry {
-    pub config_type: String,
     pub key: String,
     pub source_value: String,
     pub dest_value: String,

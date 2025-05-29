@@ -1,10 +1,12 @@
-use crate::shared::models::{DiffEntry, Project};
+use crate::shared::models::{DiffEntry, Project, ProjectConfig};
 
 use super::components::{ConfigSelectForm, ProjectSelectForm};
 use super::functions::generate_preview;
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+
+const CONFIG_COUNT: usize = 6;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ViewSteps {
@@ -16,8 +18,9 @@ pub enum ViewSteps {
 
 #[derive(Clone, Copy)]
 pub struct ConfigState {
-    pub items: [(&'static str, &'static str); 6],
-    pub values: [RwSignal<bool>; 6],
+    pub items: [(&'static str, &'static str); CONFIG_COUNT],
+    pub values: [RwSignal<bool>; CONFIG_COUNT],
+    pub count: usize,
 }
 
 impl ConfigState {
@@ -32,6 +35,7 @@ impl ConfigState {
                 ("branches", "Migrate Branches Config"),
             ],
             values: std::array::from_fn(|_| RwSignal::new(false)),
+            count: CONFIG_COUNT
         }
     }
     pub fn any_config_selected(self) -> bool {
@@ -50,8 +54,7 @@ pub fn MigratePage() -> impl IntoView {
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
     let (is_projects_select_validated, set_is_project_select_validated) = signal(false);
 
-    let preview_results_rw: RwSignal<Vec<DiffEntry>> = RwSignal::new(Vec::new());
-
+    let preview_results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
     let config_state_rw: RwSignal<ConfigState> = RwSignal::new(ConfigState::new());
 
     Effect::new(move |_| {
@@ -112,9 +115,9 @@ pub fn MigratePage() -> impl IntoView {
                                 on:click=move |_| {
                                 current_step_rw.set(ViewSteps::Loading);
                                 spawn_local(async move {
-                                    let diff_results_option = generate_preview(source_project_rw.get_untracked(), dest_project_rw.get_untracked()).await;
-                                    match diff_results_option {
-                                        Ok(diff_results) => preview_results_rw.set(diff_results),
+                                    let project_config_option = generate_preview(source_project_rw.get_untracked(), dest_project_rw.get_untracked()).await;
+                                    match project_config_option {
+                                        Ok(project_config) => preview_results_rw.set(project_config),
                                         Err(_) => preview_results_rw.set(Vec::new())
                                     }
                                     current_step_rw.set(ViewSteps::Preview);
@@ -139,39 +142,38 @@ pub fn MigratePage() -> impl IntoView {
                     <div class="flex flex-col items-center justify-center min-h-screen p-4">
                         <button class="btn btn-secondary mb-4" on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>"Back"</button>
                         <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
-                        <Show
-                            when=move || !preview_results_rw.get().is_empty()
-                            fallback=move || view! { <p>"No significant differences found or an error occurred."</p> }
-                        >
-                            <div class="w-full max-w-8xl overflow-x-auto">
-                                <table class="table w-full border-collapse border border-black">
-                                    <thead>
-                                        <tr>
-                                            <th class="p-2 text-center bg-gray-300 border border-black">"Service"</th>
-                                            <th class="p-2 text-center bg-gray-300 border border-black">"Config Item"</th>
-                                            <th class="p-2 text-center bg-gray-300 border border-black">"Source"</th>
-                                            <th class="p-2 text-center bg-gray-300 border border-black">"Destination"</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <For
-                                            each=move || preview_results_rw.get().into_iter().enumerate()
-                                            key=|(idx, _)| *idx
-                                            children=move |(_, diff_text)| {
+
+                        <div class="w-full max-w-8xl overflow-x-auto">
+                            <table class="table w-full border-collapse border border-black">
+                                <thead>
+                                    <tr>
+                                        <th class="p-2 text-center bg-gray-300 border border-black">"Service"</th>
+                                        <th class="p-2 text-center bg-gray-300 border border-black">"Config Item"</th>
+                                        <th class="p-2 text-center bg-gray-300 border border-black">"Source"</th>
+                                        <th class="p-2 text-center bg-gray-300 border border-black">"Destination"</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <For 
+                                        each=move || preview_results_rw.get().into_iter()
+                                        key=|project_config| project_config.name.clone()
+                                        children=move |project_config| {
+                                            project_config.diffs.iter().map(|diff| {
                                                 view! {
                                                     <tr class="hover:bg-gray-200">
-                                                        <td class="p-2 text-left border border-black">{diff_text.config_type}</td>
-                                                        <td class="p-2 text-left border border-black">{diff_text.key}</td>
-                                                        <td class="p-2 border border-black">{diff_text.source_value}</td>
-                                                        <td class="p-2 border border-black">{diff_text.dest_value}</td>
+                                                        <td class="p-2 text-left border border-black">{project_config.name.clone()}</td>
+                                                        <td class="p-2 text-left border border-black">{diff.key.clone()}</td>
+                                                        <td class="p-2 border border-black">{diff.source_value.clone()}</td>
+                                                        <td class="p-2 border border-black">{diff.dest_value.clone()}</td>
                                                     </tr>
-                                                }
-                                            }
-                                        />
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Show>
+                                                }    
+                                            }).collect::<Vec<_>>().into_view()
+                                        }
+                                    />
+                                </tbody>
+                            </table>
+                        </div>
+
                         <button class="btn btn-primary mt-4" on:click=move |_| {
                             current_step_rw.set(ViewSteps::Loading);
                             spawn_local(async move {
@@ -184,4 +186,25 @@ pub fn MigratePage() -> impl IntoView {
             }}
         </Show>
     }
+}
+
+fn migrate_config(preview_results_rw: Vec<DiffEntry>) {
+/*     let mut auth_diff_entries: Vec<DiffEntry> = Vec::new();
+    let mut postgrest_diff_entries: Vec<DiffEntry> = Vec::new();
+    let mut edge_diff_entries: Vec<DiffEntry> = Vec::new();
+    let mut secrets_diff_entries: Vec<DiffEntry> = Vec::new();
+    let mut storage_diff_entries: Vec<DiffEntry> = Vec::new();
+    let mut branches_diff_entries: Vec<DiffEntry> = Vec::new();
+    
+    for result in preview_results_rw.iter() {
+        match result.config_type.as_str() {
+            "Auth" => auth_diff_entries.push(result.clone()),
+            "Postgrest" => postgrest_diff_entries.push(result.clone()),
+            "Edge Functions" => edge_diff_entries.push(result.clone()),
+            "Project Secrets" => secrets_diff_entries.push(result.clone()),
+            "Storage" => storage_diff_entries.push(result.clone()),
+            "Branches" => branches_diff_entries.push(result.clone()),
+            _ => {} // Handle unknown config types
+        }
+    } */
 }

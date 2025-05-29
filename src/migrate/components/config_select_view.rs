@@ -1,8 +1,6 @@
 use crate::migrate::migrate_page::ConfigState;
 use leptos::prelude::*;
 
-const CONFIG_COUNT: usize = 6;
-
 #[component]
 pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView {
     let config_state = config_state_rw.get();
@@ -14,7 +12,7 @@ pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView
                 <col style="width: 60%;" />
             </colgroup>
             <tbody>
-                {(0..CONFIG_COUNT).map(|i| {
+                {(0..config_state.count).map(|i| {
                     let (name, label) = config_state.items[i];
                     let value_signal = config_state.values[i];
 
@@ -25,11 +23,7 @@ pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView
                                     class="checkbox checkbox-info"
                                     type="checkbox"
                                     name=name
-                                    prop:checked=value_signal
-                                    on:input=move |ev| {
-                                        let checked = event_target_checked(&ev);
-                                        value_signal.set(checked);
-                                    }
+                                    bind:checked=value_signal
                                 />
                             </td>
                             <td class="text-left">

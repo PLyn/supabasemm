@@ -1,15 +1,16 @@
-use crate::shared::models::DiffEntry;
+use crate::shared::models::{DiffEntry, ProjectConfig};
 use leptos::prelude::*;
 
 #[server]
 pub async fn generate_preview(
     source_project_rw: String,
     dest_project_rw: String,
-) -> Result<Vec<DiffEntry>, ServerFnError> {
+) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use crate::shared::server_functions::mgmt_api_call;
     use json_structural_diff::JsonDiff;
     use serde_json::Value;
 
+    let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut diff_entries: Vec<DiffEntry> = Vec::new();
     let mut results: Vec<(
         String,
@@ -55,59 +56,61 @@ pub async fn generate_preview(
                     (Ok(s_val), Ok(d_val)) => {
                         let diff = JsonDiff::diff_string(&s_val, &d_val, false);
                         if let Some(diff_str) = diff {
-                            let config_diffs =
-                                format_diff_output(config_type.clone(), diff_str.as_str());
+                            let config_diffs = format_diff_output(diff_str.as_str());
                             diff_entries.extend(config_diffs);
+
+                            project_config.push(ProjectConfig { 
+                                name: config_type.clone(), 
+                                diffs: diff_entries.clone(), 
+                                config_json: source_json_string 
+                            });
                         } else {
-                            diff_entries.push(DiffEntry {
-                                config_type: config_type.clone(),
-                                key: "".to_string(),
-                                source_value: "No differences in config found".to_string(),
-                                dest_value: "No differences in config found".to_string(),
+                            project_config.push(ProjectConfig { 
+                                name: config_type.clone(), 
+                                diffs: Vec::new(), 
+                                config_json: "".to_string()
                             });
                         }
                     }
                     (Err(e), _) => {
-                        diff_entries.push(DiffEntry {
-                            config_type: config_type.clone(),
-                            key: format!("Error parsing source config JSON: {}", e),
-                            source_value: "".to_string(),
-                            dest_value: "".to_string(),
+                        project_config.push(ProjectConfig { 
+                            name: format!("Error parsing source config JSON: {}", e), 
+                            diffs: Vec::new(), 
+                            config_json: "".to_string()
                         });
                     }
                     (_, Err(e)) => {
-                        diff_entries.push(DiffEntry {
-                            config_type: config_type.clone(),
-                            key: format!("Error parsing destination config JSON: {}", e),
-                            source_value: "".to_string(),
-                            dest_value: "".to_string(),
+                        project_config.push(ProjectConfig { 
+                            name: format!("Error parsing destination config JSON: {}", e), 
+                            diffs: Vec::new(), 
+                            config_json: "".to_string()
                         });
                     }
                 }
             }
             (Err(e), _) => {
-                diff_entries.push(DiffEntry {
-                    config_type: config_type.clone(),
-                    key: format!("Error fetching source config: {}", e),
-                    source_value: "".to_string(),
-                    dest_value: "".to_string(),
-                });
+                project_config.push(ProjectConfig { 
+                    name: format!("Error fetching source config: {}", e), 
+                    diffs: Vec::new(), 
+                    config_json: "".to_string()
+                });        
             }
             (_, Err(e)) => {
-                diff_entries.push(DiffEntry {
-                    config_type: config_type.clone(),
-                    key: format!("Error fetching destination config: {}", e),
-                    source_value: "".to_string(),
-                    dest_value: "".to_string(),
+                project_config.push(ProjectConfig { 
+                    name: format!("Error fetching destination config: {}", e), 
+                    diffs: Vec::new(), 
+                    config_json: "".to_string()
                 });
             }
         }
     }
 
-    Ok(diff_entries)
+
+
+    Ok(project_config)
 }
 
-fn format_diff_output(config_type: String, diff_str: &str) -> Vec<DiffEntry> {
+fn format_diff_output(diff_str: &str) -> Vec<DiffEntry> {
     use std::collections::HashMap;
 
     let mut source_map: HashMap<String, String> = HashMap::new();
@@ -132,7 +135,6 @@ fn format_diff_output(config_type: String, diff_str: &str) -> Vec<DiffEntry> {
         if let Some(dest_val) = dest_map.get(key) {
             if source_val != dest_val {
                 diff_entries.push(DiffEntry {
-                    config_type: config_type.clone(),
                     key: key.to_string(),
                     source_value: source_val.to_string(),
                     dest_value: dest_val.to_string(),
