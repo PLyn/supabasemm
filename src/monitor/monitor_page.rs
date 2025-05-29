@@ -12,11 +12,11 @@ pub fn MonitorPage() -> impl IntoView {
 
     view! {
         <div class="flex flex-col gap-4 py-2 mt-4 px-4">
-            
+
             <h3 class="text-3xl font-bold">"Check database Cache hit ratio"</h3>
             <label>
-            "Check the database cache hit ratio to determine if this is impacting your database performance. 
-            This will run the Supabase CLI command aganist your Database. See more details about the " 
+            "Check the database cache hit ratio to determine if this is impacting your database performance.
+            This will run the Supabase CLI command aganist your Database. See more details about the "
                 <a href="https://supabase.com/docs/reference/cli/supabase-inspect-db-cache-hit" class="link link-info">
                 "Supabase CLI command"</a>" in the docs"</label>
 
@@ -26,7 +26,7 @@ pub fn MonitorPage() -> impl IntoView {
 
             <div class="flex flex-row">
                 <label class="floating-label w-1/2 mr-2">
-                    <input type="text" class="input input-primary input-md w-full" 
+                    <input type="text" class="input input-primary input-md w-full"
                         node_ref=input_ref
                         placeholder="Database connection string"
                         bind:value=(connection_string, set_connection_string) />

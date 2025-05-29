@@ -1,17 +1,21 @@
-use leptos::prelude::*;
 use crate::shared::models::DiffEntry;
+use leptos::prelude::*;
 
 #[server]
 pub async fn generate_preview(
     source_project_rw: String,
     dest_project_rw: String,
 ) -> Result<Vec<DiffEntry>, ServerFnError> {
-    use serde_json::Value;
-    use json_structural_diff::JsonDiff;
     use crate::shared::server_functions::mgmt_api_call;
-    
+    use json_structural_diff::JsonDiff;
+    use serde_json::Value;
+
     let mut diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut results: Vec<(String, Result<String, ServerFnError>, Result<String, ServerFnError>)> = Vec::new();
+    let mut results: Vec<(
+        String,
+        Result<String, ServerFnError>,
+        Result<String, ServerFnError>,
+    )> = Vec::new();
 
     let source_config = mgmt_api_call(format!("/projects/{}/config/auth", source_project_rw)).await;
     let dest_config = mgmt_api_call(format!("/projects/{}/config/auth", dest_project_rw)).await;
@@ -29,8 +33,16 @@ pub async fn generate_preview(
     let dest_config = mgmt_api_call(format!("/projects/{}/secrets", dest_project_rw)).await;
     results.push(("Project Secrets".to_string(), source_config, dest_config));
 
-    let source_config = mgmt_api_call(format!("/projects/{}/config/database/postgres", source_project_rw)).await;
-    let dest_config = mgmt_api_call(format!("/projects/{}/config/database/postgres", dest_project_rw)).await;
+    let source_config = mgmt_api_call(format!(
+        "/projects/{}/config/database/postgres",
+        source_project_rw
+    ))
+    .await;
+    let dest_config = mgmt_api_call(format!(
+        "/projects/{}/config/database/postgres",
+        dest_project_rw
+    ))
+    .await;
     results.push(("Postgres".to_string(), source_config, dest_config));
 
     for (config_type, source_config_result, dest_config_result) in results {
@@ -43,7 +55,8 @@ pub async fn generate_preview(
                     (Ok(s_val), Ok(d_val)) => {
                         let diff = JsonDiff::diff_string(&s_val, &d_val, false);
                         if let Some(diff_str) = diff {
-                            let config_diffs = format_diff_output(config_type.clone(), diff_str.as_str());
+                            let config_diffs =
+                                format_diff_output(config_type.clone(), diff_str.as_str());
                             diff_entries.extend(config_diffs);
                         } else {
                             diff_entries.push(DiffEntry {
@@ -78,7 +91,7 @@ pub async fn generate_preview(
                     key: format!("Error fetching source config: {}", e),
                     source_value: "".to_string(),
                     dest_value: "".to_string(),
-                });                
+                });
             }
             (_, Err(e)) => {
                 diff_entries.push(DiffEntry {
@@ -86,14 +99,13 @@ pub async fn generate_preview(
                     key: format!("Error fetching destination config: {}", e),
                     source_value: "".to_string(),
                     dest_value: "".to_string(),
-                }); 
+                });
             }
         }
     }
 
     Ok(diff_entries)
 }
-
 
 fn format_diff_output(config_type: String, diff_str: &str) -> Vec<DiffEntry> {
     use std::collections::HashMap;

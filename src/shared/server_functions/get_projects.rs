@@ -11,6 +11,9 @@ pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
 
     match from_str::<Vec<Project>>(&text) {
         Ok(projects) => Ok(projects),
-        Err(e) => Err(ServerFnError::ServerError(format!("Error parsing text: {:?}", e)))
+        Err(e) => Err(ServerFnError::ServerError(format!(
+            "Error parsing text: {:?}",
+            e
+        ))),
     }
 }

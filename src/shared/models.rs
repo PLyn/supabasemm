@@ -18,8 +18,8 @@ pub struct Project {
 pub struct DiffEntry {
     pub config_type: String,
     pub key: String,
-    pub source_value: String, 
-    pub dest_value: String,   
+    pub source_value: String,
+    pub dest_value: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -34,5 +34,5 @@ pub struct ProjectMetrics {
 pub struct ApiKeyStruct {
     pub name: String,
     pub api_key: String,
-    pub id: Option<String>
+    pub id: Option<String>,
 }

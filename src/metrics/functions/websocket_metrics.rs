@@ -1,32 +1,36 @@
 // src/metrics/functions/websocket_metrics.rs
+use crate::shared::models::ProjectMetrics;
 use leptos::prelude::*;
 use server_fn::{codec::JsonEncoding, BoxedStream, ServerFnError, Websocket};
-use crate::shared::models::ProjectMetrics;
 
 #[server(protocol = Websocket<JsonEncoding, JsonEncoding>)]
 pub async fn websocket_metrics_stream(
     input: BoxedStream<String, ServerFnError>,
 ) -> Result<BoxedStream<Vec<ProjectMetrics>, ServerFnError>, ServerFnError> {
     use futures::{channel::mpsc, SinkExt, StreamExt};
-    use tokio::time::{interval, Duration};
     use leptos_axum::extract;
+    use tokio::time::{interval, Duration};
     use tower_sessions::Session;
-    
+
     let session: Session = extract().await?;
     let access_token: Option<String> = session.get("supabase_access_token").await?;
-    
+
     let access_token = match access_token {
         Some(token) => token,
-        None => return Err(ServerFnError::ServerError("No access token found in session".to_string()))
+        None => {
+            return Err(ServerFnError::ServerError(
+                "No access token found in session".to_string(),
+            ))
+        }
     };
-    
+
     let mut input = input;
     let (mut tx, rx) = mpsc::channel(1);
 
     tokio::spawn(async move {
         let mut project_ref: Option<String> = None;
         let mut metrics_interval = interval(Duration::from_secs(60));
-        
+
         loop {
             tokio::select! {
                 msg = input.next() => {
@@ -35,9 +39,9 @@ pub async fn websocket_metrics_stream(
                             if !new_project_ref.is_empty() {
                                 project_ref = Some(new_project_ref);
                                 println!("WebSocket: Project ref updated to: {:?}", project_ref);
-                                
+
                                 if let Some(ref proj_ref) = project_ref {
-                                    
+
                                     match get_project_metrics_internal(proj_ref.clone(), access_token.clone()).await {
                                         Ok(metrics) => {
                                             if let Err(e) = tx.send(Ok(metrics)).await {
@@ -69,7 +73,7 @@ pub async fn websocket_metrics_stream(
                         }
                     }
                 }
-                
+
                 _ = metrics_interval.tick() => {
                     if let Some(ref proj_ref) = project_ref {
                         match get_project_metrics_internal(proj_ref.clone(), access_token.clone()).await {
@@ -101,18 +105,21 @@ pub async fn get_project_metrics_internal(
     project_ref: String,
     access_token: String,
 ) -> Result<Vec<ProjectMetrics>, ServerFnError> {
-    use base64::{engine::general_purpose, Engine as _};
-    use prometheus_parse::{self, Value, Scrape};
-    use chrono::Utc;
-    use reqwest::header::{HeaderValue, AUTHORIZATION, ACCEPT};
     use crate::shared::models::ApiKeyStruct;
+    use base64::{engine::general_purpose, Engine as _};
+    use chrono::Utc;
+    use prometheus_parse::{self, Scrape, Value};
+    use reqwest::header::{HeaderValue, ACCEPT, AUTHORIZATION};
 
     let mut service_role_key_option: Option<String> = None;
     let service_role_key: String;
-    let get_api_key_url = format!("https://api.supabase.com/v1/projects/{}/api-keys?reveal=true", project_ref);
-    
+    let get_api_key_url = format!(
+        "https://api.supabase.com/v1/projects/{}/api-keys?reveal=true",
+        project_ref
+    );
+
     let client = reqwest::Client::new();
-    
+
     let text_response = client
         .get(&get_api_key_url)
         .header(AUTHORIZATION, format!("Bearer {}", access_token))
@@ -131,20 +138,32 @@ pub async fn get_project_metrics_internal(
                 }
             }
         }
-        Err(e) => return Err(ServerFnError::ServerError(format!("Error parsing API keys JSON: {:?}", e)))
+        Err(e) => {
+            return Err(ServerFnError::ServerError(format!(
+                "Error parsing API keys JSON: {:?}",
+                e
+            )))
+        }
     }
 
     match service_role_key_option {
         Some(key) => service_role_key = key,
-        None => return Err(ServerFnError::ServerError("Service role API key not found".to_string()))
+        None => {
+            return Err(ServerFnError::ServerError(
+                "Service role API key not found".to_string(),
+            ))
+        }
     }
 
-    let metrics_url = format!("https://{}.supabase.co/customer/v1/privileged/metrics", project_ref);
+    let metrics_url = format!(
+        "https://{}.supabase.co/customer/v1/privileged/metrics",
+        project_ref
+    );
 
     let auth_string = format!("service_role:{}", service_role_key);
     let encoded_auth = general_purpose::STANDARD.encode(auth_string.as_bytes());
     let auth_header_value = format!("Basic {}", encoded_auth);
-    
+
     let metrics_text = client
         .get(&metrics_url)
         .header(AUTHORIZATION, HeaderValue::from_str(&auth_header_value)?)
@@ -185,12 +204,14 @@ pub async fn get_project_metrics_internal(
                 "node_disk_io_time_seconds_total",
                 "node_disk_io_time_weighted_seconds_total",
             ];
-            
+
             for sample in parsed_scrape.samples {
                 if desired_metrics.contains(&sample.metric.as_str()) {
                     if sample.metric.starts_with("node_filesystem_") {
                         let mountpoint = sample.labels.get("mountpoint");
-                        if mountpoint != Some(&"/".to_string()) && mountpoint != Some(&"/data".to_string()) {
+                        if mountpoint != Some(&"/".to_string())
+                            && mountpoint != Some(&"/data".to_string())
+                        {
                             continue;
                         }
                     }
@@ -205,7 +226,8 @@ pub async fn get_project_metrics_internal(
                         }
                     };
 
-                    let labels_string: String = sample.labels
+                    let labels_string: String = sample
+                        .labels
                         .iter()
                         .map(|(key, value)| format!("{}=\"{}\"", key, value))
                         .collect::<Vec<String>>()
@@ -221,6 +243,9 @@ pub async fn get_project_metrics_internal(
             }
             Ok(project_metrics_list)
         }
-        Err(e) => Err(ServerFnError::ServerError(format!("Error parsing Prometheus metrics: {:?}", e))),
+        Err(e) => Err(ServerFnError::ServerError(format!(
+            "Error parsing Prometheus metrics: {:?}",
+            e
+        ))),
     }
 }

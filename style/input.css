@@ -1,3 +1,5 @@
 @import "tailwindcss";
-@plugin "../tailwindcss/daisyui.js";
+@plugin "../tailwindcss/daisyui.js" {
+  themes: lemonade --default, forest --prefersdark;
+}
 @source "./src/*.{html,php,erb,rs}";

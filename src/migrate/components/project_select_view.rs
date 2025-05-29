@@ -1,6 +1,6 @@
+use super::AnimatedArrow;
 use crate::shared::models::Project;
 use leptos::prelude::*;
-use super::AnimatedArrow;
 
 #[component]
 pub fn ProjectSelectForm(
@@ -9,13 +9,12 @@ pub fn ProjectSelectForm(
     projects_list: ReadSignal<Vec<Project>>,
     set_is_project_select_validated: WriteSignal<bool>,
 ) -> impl IntoView {
-    let (validate_source, 
-        validate_destination, 
-        validate_form, 
-        is_validated) = validate_errors(source_project_rw, 
-                                                    dest_project_rw, 
-                                                    projects_list, 
-                                                    set_is_project_select_validated);
+    let (validate_source, validate_destination, validate_form, is_validated) = validate_errors(
+        source_project_rw,
+        dest_project_rw,
+        projects_list,
+        set_is_project_select_validated,
+    );
     view!(
         <div class="px-2 py-4">
             <label class="mr-4">"Select Source Project"</label>
@@ -36,7 +35,7 @@ pub fn ProjectSelectForm(
                                     .map(|project| {
                                         let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
                                         view! { <option value={project.id.clone()}>{display_text}</option> }})
-                                    .collect_view()  
+                                    .collect_view()
                             }
                         }
                     </Suspense>
@@ -65,7 +64,7 @@ pub fn ProjectSelectForm(
                             .map(|project| {
                                 let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
                                 view! { <option value={project.id.clone()}>{display_text}</option> }})
-                            .collect_view()  
+                            .collect_view()
                     }
                 }
             </Suspense>
@@ -81,17 +80,22 @@ pub fn ProjectSelectForm(
             <li><p style="color: red;">{validate_form.get()}</p></li>
             <li><p style="color: red;">{validate_source.get()}</p></li>
             <li><p style="color: red;">{validate_destination.get()}</p></li>
-            </ul>    
-        </Show>     
+            </ul>
+        </Show>
     )
 }
 
-fn validate_errors(    
+fn validate_errors(
     source_project_rw: RwSignal<String>,
     dest_project_rw: RwSignal<String>,
     projects_list: ReadSignal<Vec<Project>>,
     set_is_project_select_validated: WriteSignal<bool>,
-) -> (Signal<String>, Signal<String>, Signal<String>, Signal<String>){
+) -> (
+    Signal<String>,
+    Signal<String>,
+    Signal<String>,
+    Signal<String>,
+) {
     let validate_source = Signal::derive(move || {
         let source_project = source_project_rw.get();
         let projects = projects_list.get();
@@ -104,7 +108,7 @@ fn validate_errors(
                 return "Selected source project is INACTIVE.".to_string();
             }
         }
-        
+
         String::new() // No error
     });
 
@@ -120,14 +124,15 @@ fn validate_errors(
                 return "Selected destination project is INACTIVE.".to_string();
             }
         }
-        
+
         String::new() // No error
     });
 
     let validate_form = Signal::derive(move || {
         let source_project = source_project_rw.get();
         let dest_project = dest_project_rw.get();
-        if !source_project.is_empty() && !dest_project.is_empty() && source_project == dest_project {
+        if !source_project.is_empty() && !dest_project.is_empty() && source_project == dest_project
+        {
             return "Source and destination projects cannot be the same.".to_string();
         }
 
@@ -135,13 +140,21 @@ fn validate_errors(
     });
 
     let is_validated = Signal::derive(move || {
-        if validate_source.get().is_empty() && validate_destination.get().is_empty() && validate_form.get().is_empty() {
+        if validate_source.get().is_empty()
+            && validate_destination.get().is_empty()
+            && validate_form.get().is_empty()
+        {
             set_is_project_select_validated.set(true);
-           return "No Validation Errors Found. You may proceed!".to_string();
+            return "No Validation Errors Found. You may proceed!".to_string();
         }
         set_is_project_select_validated.set(false);
-        String::new() 
+        String::new()
     });
 
-    (validate_source, validate_destination, validate_form, is_validated)
+    (
+        validate_source,
+        validate_destination,
+        validate_form,
+        is_validated,
+    )
 }

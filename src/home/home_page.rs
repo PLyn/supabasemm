@@ -1,6 +1,5 @@
 use leptos::prelude::*;
 
-
 #[component]
 pub fn HomePage() -> impl IntoView {
     let count = RwSignal::new(0);
