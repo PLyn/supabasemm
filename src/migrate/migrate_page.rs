@@ -1,7 +1,7 @@
 use crate::shared::models::{DiffEntry, Project, ProjectConfig};
 
 use super::components::{ConfigSelectForm, ProjectSelectForm};
-use super::functions::generate_preview;
+use super::functions::{generate_preview, migrate_config};
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -57,6 +57,8 @@ pub fn MigratePage() -> impl IntoView {
     let preview_results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
     let config_state_rw: RwSignal<ConfigState> = RwSignal::new(ConfigState::new());
 
+    let migration_status_rw = RwSignal::new("Migration Status: Migration has not been run");
+
     Effect::new(move |_| {
         spawn_local(async move {
             let auth_check_result = check_auth_status().await;
@@ -83,6 +85,8 @@ pub fn MigratePage() -> impl IntoView {
                 </button>
             </div>
         </Show>
+
+
         <Show when=move || is_authenticated.get() >
             {move || match current_step_rw.get() {
 
@@ -140,9 +144,24 @@ pub fn MigratePage() -> impl IntoView {
 
                 ViewSteps::Preview => view! {
                     <div class="flex flex-col items-center justify-center min-h-screen p-4">
+                        <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
                         <button class="btn btn-secondary mb-4" on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>"Back"</button>
-                        <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
 
+                        <button class="btn btn-primary mt-4" on:click=move |_| {
+                            spawn_local(async move {
+                                let migrate_result = migrate_config(preview_results_rw.get(), dest_project_rw.get()).await;
+                                match migrate_result {
+                                    Ok(status) => migration_status_rw.set("Success!"),
+                                    Err(e) => {
+                                        eprintln!("{:?}", e);
+                                        
+                                        migration_status_rw.set("Failure");
+                                    }
+                                }
+                            });
+                        }>"Migrate Project Configuration!"</button>
+
+                        <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
                         <div class="w-full max-w-8xl overflow-x-auto">
                             <table class="table w-full border-collapse border border-black">
                                 <thead>
@@ -173,38 +192,9 @@ pub fn MigratePage() -> impl IntoView {
                                 </tbody>
                             </table>
                         </div>
-
-                        <button class="btn btn-primary mt-4" on:click=move |_| {
-                            current_step_rw.set(ViewSteps::Loading);
-                            spawn_local(async move {
-
-                                current_step_rw.set(ViewSteps::Preview);
-                            });
-                        }>"Migrate Project Configuration!"</button>
                     </div>
                 }.into_any()
             }}
         </Show>
     }
-}
-
-fn migrate_config(preview_results_rw: Vec<DiffEntry>) {
-/*     let mut auth_diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut postgrest_diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut edge_diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut secrets_diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut storage_diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut branches_diff_entries: Vec<DiffEntry> = Vec::new();
-    
-    for result in preview_results_rw.iter() {
-        match result.config_type.as_str() {
-            "Auth" => auth_diff_entries.push(result.clone()),
-            "Postgrest" => postgrest_diff_entries.push(result.clone()),
-            "Edge Functions" => edge_diff_entries.push(result.clone()),
-            "Project Secrets" => secrets_diff_entries.push(result.clone()),
-            "Storage" => storage_diff_entries.push(result.clone()),
-            "Branches" => branches_diff_entries.push(result.clone()),
-            _ => {} // Handle unknown config types
-        }
-    } */
 }

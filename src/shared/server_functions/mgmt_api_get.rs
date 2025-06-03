@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 #[server]
-pub async fn mgmt_api_call(url: String) -> Result<String, ServerFnError> {
+pub async fn mgmt_api_get(url: String) -> Result<String, ServerFnError> {
     use leptos_axum::extract;
     use reqwest::header::{ACCEPT, AUTHORIZATION};
     use reqwest::Response;
