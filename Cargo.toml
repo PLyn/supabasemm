@@ -10,7 +10,8 @@ crate-type = ["cdylib", "rlib"]
 leptos = { version = "0.8.0" }
 leptos_router = { version = "0.8.0" }
 thiserror = "2.0.12"
-serde = { version = "1.0.219" }
+futures = "0.3.31"
+serde = { version = "1", default-features = false, features = ["derive"]}
 
 axum = { version = "0.8.0", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -27,20 +28,23 @@ oauth2 = { version = "5.0.0", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
 gloo-timers = { version = "0.3.0", features = ["futures"] }
-futures = "0.3.31"
-time = "0.3.41"
-serde_json = { version = "1.0.140"}
 json-structural-diff = { version = "0.2.0", optional = true }
 base64 = { version = "0.22.1", optional = true }
 regex = { version = "1.11.1", optional = true }
-chrono = { version = "0.4.41", features = ["serde"] }
+chrono = { version = "0.4.41", features = ["serde"], optional = true }
 prometheus-parse = { version = "0.2.5", optional = true }
+serde_json = { version = "1.0.140", optional = true }
+time = {version = "0.3.41", optional = true}
+
 
 [features]
 ssr = [
     "dep:dotenvy",
     "dep:base64",
     "dep:regex",
+    "dep:serde_json",
+    "dep:time",
+    "dep:chrono",
     "dep:prometheus-parse",
     "dep:json-structural-diff",
     "dep:oauth2",
@@ -56,10 +60,6 @@ ssr = [
 ]
 
 hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
-oauth2 = ["dep:oauth2"]
-reqwest = ["dep:reqwest"]
-tower-sessions = ["dep:tower-sessions"]
-json-structural-diff = ["dep:json-structural-diff"]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
@@ -81,7 +81,7 @@ site-root = "target/site"
 site-pkg-dir = "pkg"
 
 # [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-style-file = "style/main.scss"
+style-file = "style/output.css"
 # Assets source dir. All files found here will be copied and synchronized to site-root.
 # The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
 #

@@ -7,7 +7,7 @@ pub async fn call_supabase_cli(
 ) -> Result<String, ServerFnError> {
     use std::process::Stdio;
     use tokio::process::Command;
-    
+
     let mut cmd = Command::new("supabase");
     cmd.args(&[
         "inspect",

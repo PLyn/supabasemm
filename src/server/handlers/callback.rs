@@ -22,7 +22,7 @@ pub async fn callback_handler(
 
     let oauth_data: Option<OAuthSessionData> = match session.get("oauth_data").await {
         Ok(data) => data,
-        Err(_) => None
+        Err(_) => None,
     };
 
     let oauth_data = match oauth_data {

@@ -15,14 +15,21 @@ pub struct Project {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DiffEntry {
-    pub config_type: String,
-    pub key: String,
-    pub source_value: String, 
-    pub dest_value: String,   
+pub struct ProjectConfig {
+    pub name: String,
+    pub diffs: Vec<DiffEntry>,
+    pub config_json: String
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiffEntry {
+    pub key: String,
+    pub source_value: String,
+    pub dest_value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProjectMetrics {
     pub timestamp: String,
     pub value: String,
@@ -34,5 +41,5 @@ pub struct ProjectMetrics {
 pub struct ApiKeyStruct {
     pub name: String,
     pub api_key: String,
-    pub id: Option<String>
+    pub id: Option<String>,
 }

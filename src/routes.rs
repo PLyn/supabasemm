@@ -1,8 +1,7 @@
 use crate::home::HomePage;
+use crate::metrics::MetricsPage;
 use crate::migrate::MigratePage;
 use crate::monitor::MonitorPage;
-use crate::metrics::MetricsPage;
-
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -37,21 +36,56 @@ pub fn App() -> impl IntoView {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/supabasemm.css"/>
-
         // sets the document title
         <Title text="Supa Migrate and Monitor"/>
 
-        <h1>"Supabase M&M"</h1>
-        <a href="/">Home</a>
-        <div></div>
-        <a href="/migrate">Migrate</a>
-        <div></div>
-        <a href="/monitor">Monitor</a>
-        <div></div>
-        <a href="/metrics">Metrics</a>
+        // Header section
+        <header class="shadow-md">
+            <div class="container mx-auto px-4">
+                <div class="flex items-center justify-between py-4">
+                    // Title on the left
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        "Supabase M&M"
+                    </h1>
 
+                    // Navigation menu in the middle
+                    <nav class="flex space-x-8">
+                        <a
+                            href="/"
+                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
+                        >
+                            "Home"
+                        </a>
+                        <a
+                            href="/migrate"
+                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
+                        >
+                            "Migrate"
+                        </a>
+                        <a
+                            href="/monitor"
+                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
+                        >
+                            "Monitor"
+                        </a>
+                        <a
+                            href="/metrics"
+                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
+                        >
+                            "Metrics"
+                        </a>
+                    </nav>
 
-        // content for this welcome page
+                    // Sign in button on the right
+                    <button class="btn btn-primary"
+                        on:click=move |_| { window().location().set_href("/connect-supabase/login").unwrap(); }>
+                        "Sign in with Supabase"
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        // Main content
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>

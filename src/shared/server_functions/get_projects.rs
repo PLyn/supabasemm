@@ -4,12 +4,16 @@ use leptos::prelude::*;
 #[server]
 pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
     // Imports
-    use super::mgmt_api_call;
+    use super::mgmt_api_get;
+    use serde_json::from_str;
 
-    let text = mgmt_api_call("/projects".to_string()).await?;
+    let text = mgmt_api_get("/projects".to_string()).await?;
 
-    match serde_json::from_str::<Vec<Project>>(&text) {
+    match from_str::<Vec<Project>>(&text) {
         Ok(projects) => Ok(projects),
-        Err(e) => Err(ServerFnError::ServerError(format!("Error parsing text: {:?}", e)))
+        Err(e) => Err(ServerFnError::ServerError(format!(
+            "Error parsing text: {:?}",
+            e
+        ))),
     }
 }
