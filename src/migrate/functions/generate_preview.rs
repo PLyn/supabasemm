@@ -1,4 +1,5 @@
 use crate::shared::models::{DiffEntry, ProjectConfig};
+use crate::shared::server_functions::mgmt_api_call;
 use leptos::prelude::*;
 
 #[server]
@@ -6,110 +7,59 @@ pub async fn generate_preview(
     source_project_rw: String,
     dest_project_rw: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
-    use crate::shared::server_functions::mgmt_api_call;
     use json_structural_diff::JsonDiff;
     use serde_json::Value;
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
-    let mut diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut results: Vec<(
-        String,
-        Result<String, ServerFnError>,
-        Result<String, ServerFnError>,
-    )> = Vec::new();
+    let mut config_json: Vec<(String, String, String)> = Vec::new();
 
-    let source_config = mgmt_api_call(format!("/projects/{}/config/auth", source_project_rw)).await;
-    let dest_config = mgmt_api_call(format!("/projects/{}/config/auth", dest_project_rw)).await;
-    results.push(("Auth".to_string(), source_config, dest_config));
+    let source_config = mgmt_api_call(format!("/projects/{}/config/auth", source_project_rw)).await?;
+    let dest_config = mgmt_api_call(format!("/projects/{}/config/auth", dest_project_rw)).await?;
+    config_json.push(("Auth".to_string(), source_config, dest_config));
 
-    let source_config = mgmt_api_call(format!("/projects/{}/postgrest", source_project_rw)).await;
-    let dest_config = mgmt_api_call(format!("/projects/{}/postgrest", dest_project_rw)).await;
-    results.push(("Postgrest".to_string(), source_config, dest_config));
+    let source_config = mgmt_api_call(format!("/projects/{}/postgrest", source_project_rw)).await?;
+    let dest_config = mgmt_api_call(format!("/projects/{}/postgrest", dest_project_rw)).await?;
+    config_json.push(("Postgrest".to_string(), source_config, dest_config));
 
-    let source_config = mgmt_api_call(format!("/projects/{}/functions", source_project_rw)).await;
-    let dest_config = mgmt_api_call(format!("/projects/{}/functions", dest_project_rw)).await;
-    results.push(("Edge Functions".to_string(), source_config, dest_config));
+    let source_config = mgmt_api_call(format!("/projects/{}/functions", source_project_rw)).await?;
+    let dest_config = mgmt_api_call(format!("/projects/{}/functions", dest_project_rw)).await?;
+    config_json.push(("Edge Functions".to_string(), source_config, dest_config));
 
-    let source_config = mgmt_api_call(format!("/projects/{}/secrets", source_project_rw)).await;
-    let dest_config = mgmt_api_call(format!("/projects/{}/secrets", dest_project_rw)).await;
-    results.push(("Project Secrets".to_string(), source_config, dest_config));
+    let source_config = mgmt_api_call(format!("/projects/{}/secrets", source_project_rw)).await?;
+    let dest_config = mgmt_api_call(format!("/projects/{}/secrets", dest_project_rw)).await?;
+    config_json.push(("Project Secrets".to_string(), source_config, dest_config));
 
-    let source_config = mgmt_api_call(format!(
-        "/projects/{}/config/database/postgres",
-        source_project_rw
-    ))
-    .await;
-    let dest_config = mgmt_api_call(format!(
-        "/projects/{}/config/database/postgres",
-        dest_project_rw
-    ))
-    .await;
-    results.push(("Postgres".to_string(), source_config, dest_config));
+    let source_config = mgmt_api_call(format!("/projects/{}/config/database/postgres", source_project_rw)).await?;
+    let dest_config = mgmt_api_call(format!("/projects/{}/config/database/postgres",dest_project_rw)).await?;
+    config_json.push(("Postgres".to_string(), source_config, dest_config));
 
-    for (config_type, source_config_result, dest_config_result) in results {
-        match (source_config_result, dest_config_result) {
-            (Ok(source_json_string), Ok(dest_json_string)) => {
-                let source_value: Result<Value, _> = serde_json::from_str(&source_json_string);
-                let dest_value: Result<Value, _> = serde_json::from_str(&dest_json_string);
+    for (config_type, source_json, dest_json) in config_json {
+        let source_value: Value = serde_json::from_str(&source_json)?;
+        let dest_value: Value = serde_json::from_str(&dest_json)?;
 
-                match (source_value, dest_value) {
-                    (Ok(s_val), Ok(d_val)) => {
-                        let diff = JsonDiff::diff_string(&s_val, &d_val, false);
-                        if let Some(diff_str) = diff {
-                            let config_diffs = format_diff_output(diff_str.as_str());
-                            diff_entries.extend(config_diffs);
-
-                            project_config.push(ProjectConfig { 
-                                name: config_type.clone(), 
-                                diffs: diff_entries.clone(), 
-                                config_json: source_json_string 
-                            });
-                        } else {
-                            project_config.push(ProjectConfig { 
-                                name: config_type.clone(), 
-                                diffs: Vec::new(), 
-                                config_json: "".to_string()
-                            });
-                        }
-                    }
-                    (Err(e), _) => {
-                        project_config.push(ProjectConfig { 
-                            name: format!("Error parsing source config JSON: {}", e), 
-                            diffs: Vec::new(), 
-                            config_json: "".to_string()
-                        });
-                    }
-                    (_, Err(e)) => {
-                        project_config.push(ProjectConfig { 
-                            name: format!("Error parsing destination config JSON: {}", e), 
-                            diffs: Vec::new(), 
-                            config_json: "".to_string()
-                        });
-                    }
-                }
-            }
-            (Err(e), _) => {
+        let diff_option = JsonDiff::diff_string(&source_value, &dest_value, false);
+        match diff_option {
+            Some(diff_strings) => {
+                let config_diffs = format_diff_output(diff_strings.as_str());
                 project_config.push(ProjectConfig { 
-                    name: format!("Error fetching source config: {}", e), 
+                    name: config_type.clone(), 
+                    diffs: config_diffs, 
+                    config_json: source_json 
+                });                    
+            }
+            None => {
+                project_config.push(ProjectConfig { 
+                    name: config_type.clone(), 
                     diffs: Vec::new(), 
                     config_json: "".to_string()
-                });        
-            }
-            (_, Err(e)) => {
-                project_config.push(ProjectConfig { 
-                    name: format!("Error fetching destination config: {}", e), 
-                    diffs: Vec::new(), 
-                    config_json: "".to_string()
-                });
+                });    
             }
         }
     }
-
-
-
     Ok(project_config)
 }
 
+#[cfg(feature = "ssr")]
 fn format_diff_output(diff_str: &str) -> Vec<DiffEntry> {
     use std::collections::HashMap;
 
