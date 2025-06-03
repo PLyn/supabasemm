@@ -1,12 +1,9 @@
-use crate::shared::models::{DiffEntry, Project, ProjectConfig};
-
-use super::components::{ConfigSelectForm, ProjectSelectForm};
+use crate::shared::models::{Project, ProjectConfig};
+use super::components::{ConfigSelectForm, ProjectSelectForm, PreviewResultsView};
 use super::functions::{generate_preview, migrate_config};
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-
-const CONFIG_COUNT: usize = 6;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ViewSteps {
@@ -15,32 +12,14 @@ pub enum ViewSteps {
     Loading,
     Preview,
 }
-
-#[derive(Clone, Copy)]
-pub struct ConfigState {
-    pub items: [(&'static str, &'static str); CONFIG_COUNT],
-    pub values: [RwSignal<bool>; CONFIG_COUNT],
-    pub count: usize,
-}
-
-impl ConfigState {
-    pub fn new() -> Self {
-        Self {
-            items: [
-                ("auth", "Migrate Auth Config"),
-                ("postgrest", "Migrate Postgrest Config"),
-                ("edge_function", "Migrate Edge Function Config"),
-                ("secrets", "Migrate Secrets Config"),
-                ("storage", "Migrate Storage Config"),
-                ("branches", "Migrate Branches Config"),
-            ],
-            values: std::array::from_fn(|_| RwSignal::new(false)),
-            count: CONFIG_COUNT
-        }
-    }
-    pub fn any_config_selected(self) -> bool {
-        self.values.iter().any(|signal| signal.get())
-    }
+#[derive(Debug)]
+pub enum ConfigItems{
+    Auth = 0,
+    Postgrest = 1,
+    EdgeFunctions = 2,
+    Secrets = 3,
+    Storage = 4,
+    Branches = 5
 }
 
 #[component]
@@ -50,14 +29,17 @@ pub fn MigratePage() -> impl IntoView {
     let source_project_rw = RwSignal::new("".to_string());
     let dest_project_rw = RwSignal::new("".to_string());
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
-
-    let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
-    let (is_projects_select_validated, set_is_project_select_validated) = signal(false);
-
     let preview_results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
-    let config_state_rw: RwSignal<ConfigState> = RwSignal::new(ConfigState::new());
-
     let migration_status_rw = RwSignal::new("Migration Status: Migration has not been run");
+    let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
+
+    let config_items_rw: [RwSignal<(String, bool)>; 6] = [
+        RwSignal::new((format!("{:?}", ConfigItems::Auth), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::Postgrest), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::EdgeFunctions), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::Secrets), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::Storage), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::Branches), false))];
 
     Effect::new(move |_| {
         spawn_local(async move {
@@ -67,9 +49,11 @@ pub fn MigratePage() -> impl IntoView {
             };
 
             if is_authenticated.get_untracked() {
+                current_step_rw.set(ViewSteps::Loading);
                 let projects_result = get_projects().await;
                 if let Ok(projects_list) = projects_result {
                     set_projects_list.set(projects_list);
+                    current_step_rw.set(ViewSteps::Projects);
                 };
             }
         });
@@ -85,52 +69,28 @@ pub fn MigratePage() -> impl IntoView {
                 </button>
             </div>
         </Show>
-
-
         <Show when=move || is_authenticated.get() >
             {move || match current_step_rw.get() {
-
-                ViewSteps::Projects => view! {
-                    <div class="flex flex-col items-center">
-                        <ProjectSelectForm
-                            source_project_rw
-                            dest_project_rw
-                            projects_list
-                            set_is_project_select_validated />
-
-                        <Show when=move || is_projects_select_validated.get() >
-                            <button class="btn btn-primary mt-4"
-                                on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>
-                                Next
-                            </button>
-                        </Show>
-                    </div>
-                }.into_any(),
-
+                ViewSteps::Projects => view! {      
+                    <ProjectSelectForm
+                        source_project_rw
+                        dest_project_rw
+                        projects_list
+                        next_step_fn=move || { current_step_rw.set(ViewSteps::Config); } 
+                    />}.into_any(),
                 ViewSteps::Config => view! {
                     <div class="flex flex-col items-center">
                         <button class="btn btn-secondary my-4" on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>"Back"</button>
 
-                        <ConfigSelectForm
-                            config_state_rw />
+                        <ConfigSelectForm config_items_rw />
 
-                        <Show when=move || config_state_rw.get().any_config_selected() >
+                        <Show when=move || config_items_rw.iter().any(|signal| signal.get().1) >
                             <button class="btn btn-primary mt-4"
-                                on:click=move |_| {
-                                current_step_rw.set(ViewSteps::Loading);
-                                spawn_local(async move {
-                                    let project_config_option = generate_preview(source_project_rw.get_untracked(), dest_project_rw.get_untracked()).await;
-                                    match project_config_option {
-                                        Ok(project_config) => preview_results_rw.set(project_config),
-                                        Err(_) => preview_results_rw.set(Vec::new())
-                                    }
-                                    current_step_rw.set(ViewSteps::Preview);
-                                });
-                            }>"Preview Changes"</button>
+                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), preview_results_rw, current_step_rw); }>        
+                                "Preview Changes"
+                            </button>
                         </Show>
-                    </div>
-                }.into_any(),
-
+                    </div>}.into_any(),
                 ViewSteps::Loading => view! {
                     <div class="flex flex-col items-center justify-center h-screen">
                         <h3>Loading...</h3>
@@ -139,9 +99,7 @@ pub fn MigratePage() -> impl IntoView {
                                 <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 50 50" to="360 50 50" dur="1s" repeatCount="indefinite" />
                             </circle>
                         </svg>
-                    </div>
-                }.into_any(),
-
+                    </div>}.into_any(),
                 ViewSteps::Preview => view! {
                     <div class="flex flex-col items-center justify-center min-h-screen p-4">
                         <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
@@ -152,49 +110,27 @@ pub fn MigratePage() -> impl IntoView {
                                 let migrate_result = migrate_config(preview_results_rw.get(), dest_project_rw.get()).await;
                                 match migrate_result {
                                     Ok(status) => migration_status_rw.set("Success!"),
-                                    Err(e) => {
-                                        eprintln!("{:?}", e);
-                                        
-                                        migration_status_rw.set("Failure");
-                                    }
+                                    Err(e) => { migration_status_rw.set("Failure"); }
                                 }
                             });
                         }>"Migrate Project Configuration!"</button>
 
-                        <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
-                        <div class="w-full max-w-8xl overflow-x-auto">
-                            <table class="table w-full border-collapse border border-black">
-                                <thead>
-                                    <tr>
-                                        <th class="p-2 text-center bg-gray-300 border border-black">"Service"</th>
-                                        <th class="p-2 text-center bg-gray-300 border border-black">"Config Item"</th>
-                                        <th class="p-2 text-center bg-gray-300 border border-black">"Source"</th>
-                                        <th class="p-2 text-center bg-gray-300 border border-black">"Destination"</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <For 
-                                        each=move || preview_results_rw.get().into_iter()
-                                        key=|project_config| project_config.name.clone()
-                                        children=move |project_config| {
-                                            project_config.diffs.iter().map(|diff| {
-                                                view! {
-                                                    <tr class="hover:bg-gray-200">
-                                                        <td class="p-2 text-left border border-black">{project_config.name.clone()}</td>
-                                                        <td class="p-2 text-left border border-black">{diff.key.clone()}</td>
-                                                        <td class="p-2 border border-black">{diff.source_value.clone()}</td>
-                                                        <td class="p-2 border border-black">{diff.dest_value.clone()}</td>
-                                                    </tr>
-                                                }    
-                                            }).collect::<Vec<_>>().into_view()
-                                        }
-                                    />
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                }.into_any()
-            }}
+                        <PreviewResultsView preview_results_rw />
+                    </div>}.into_any() 
+                }
+            }
         </Show>
     }
+}
+
+fn config_next_step_fn(source_project: String, dest_project: String, preview_results_rw: RwSignal<Vec<ProjectConfig>>, current_step_rw: RwSignal<ViewSteps>) {
+    current_step_rw.set(ViewSteps::Loading);
+    spawn_local(async move {
+        let project_config_option = generate_preview(source_project, dest_project).await;
+        match project_config_option {
+            Ok(project_config) => preview_results_rw.set(project_config),
+            Err(_) => preview_results_rw.set(Vec::new())
+        } 
+        current_step_rw.set(ViewSteps::Preview);    
+    });
 }

@@ -1,0 +1,41 @@
+use crate::shared::models::{Project, ProjectConfig};
+use leptos::prelude::*;
+
+#[component]
+pub fn PreviewResultsView(
+    preview_results_rw: RwSignal<Vec<ProjectConfig>>
+) -> impl IntoView {
+    view! {
+        <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
+        <div class="w-full max-w-8xl overflow-x-auto">
+            <table class="table w-full border-collapse border border-black">
+                <thead>
+                    <tr>
+                        <th class="p-2 text-center bg-gray-300 border border-black">"Service"</th>
+                        <th class="p-2 text-center bg-gray-300 border border-black">"Config Item"</th>
+                        <th class="p-2 text-center bg-gray-300 border border-black">"Source"</th>
+                        <th class="p-2 text-center bg-gray-300 border border-black">"Destination"</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <For 
+                        each=move || preview_results_rw.get().into_iter()
+                        key=|project_config| project_config.name.clone()
+                        children=move |project_config| {
+                            project_config.diffs.iter().map(|diff| {
+                                view! {
+                                    <tr class="hover:bg-gray-200">
+                                        <td class="p-2 text-left border border-black">{project_config.name.clone()}</td>
+                                        <td class="p-2 text-left border border-black">{diff.key.clone()}</td>
+                                        <td class="p-2 border border-black">{diff.source_value.clone()}</td>
+                                        <td class="p-2 border border-black">{diff.dest_value.clone()}</td>
+                                    </tr>
+                                }    
+                            }).collect::<Vec<_>>().into_view()
+                        }
+                    />
+                </tbody>
+            </table>
+        </div>
+    }
+}

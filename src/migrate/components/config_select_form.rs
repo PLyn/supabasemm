@@ -1,10 +1,7 @@
-use crate::migrate::migrate_page::ConfigState;
 use leptos::prelude::*;
 
 #[component]
-pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView {
-    let config_state = config_state_rw.get();
-
+pub fn ConfigSelectForm(config_items_rw: [RwSignal<(String, bool)>; 6]) -> impl IntoView {
     view! {
         <table class="table table-fixed w-full">
             <colgroup>
@@ -12,9 +9,8 @@ pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView
                 <col style="width: 60%;" />
             </colgroup>
             <tbody>
-                {(0..config_state.count).map(|i| {
-                    let (name, label) = config_state.items[i];
-                    let value_signal = config_state.values[i];
+                {config_items_rw.into_iter().map(|item_signal| {
+                    let (name, enabled) = item_signal.get();
 
                     view! {
                         <tr>
@@ -22,12 +18,16 @@ pub fn ConfigSelectForm(config_state_rw: RwSignal<ConfigState>) -> impl IntoView
                                 <input
                                     class="checkbox checkbox-info"
                                     type="checkbox"
-                                    name=name
-                                    bind:checked=value_signal
+                                    name={name.clone()}
+                                    prop:checked=move || enabled
+                                    on:change=move |ev| {
+                                        let new_value = event_target_checked(&ev);
+                                        item_signal.set((item_signal.get().0, new_value));
+                                    }
                                 />
                             </td>
                             <td class="text-left">
-                                <label class="ml-2">{label}</label>
+                                <label class="ml-2">{name.clone()}</label>
                             </td>
                         </tr>
                     }

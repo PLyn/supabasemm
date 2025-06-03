@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::shared::models::{DiffEntry, ProjectConfig};
 use crate::shared::server_functions::mgmt_api_get;
 use leptos::prelude::*;
@@ -12,7 +10,7 @@ pub async fn generate_preview(
     dest_project_rw: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use json_structural_diff::JsonDiff;
-    use serde_json::{Value, Map};
+    use serde_json::Value;
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut config_json: Vec<(String, String, String)> = Vec::new();
