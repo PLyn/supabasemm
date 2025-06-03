@@ -30,7 +30,8 @@ pub fn MigratePage() -> impl IntoView {
     let dest_project_rw = RwSignal::new("".to_string());
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
     let preview_results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
-    let migration_status_rw = RwSignal::new("Migration Status: Migration has not been run");
+    let migrate_results_rw: RwSignal<String> = RwSignal::new("".to_string());
+    let migration_status_rw: RwSignal<String> = RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
     let config_items_rw: [RwSignal<(String, bool)>; 6] = [
@@ -106,12 +107,19 @@ pub fn MigratePage() -> impl IntoView {
                         <button class="btn btn-secondary mb-4" on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>"Back"</button>
 
                         <button class="btn btn-primary mt-4" on:click=move |_| {
+                            current_step_rw.set(ViewSteps::Loading);
                             spawn_local(async move {
                                 let migrate_result = migrate_config(preview_results_rw.get(), dest_project_rw.get()).await;
                                 match migrate_result {
-                                    Ok(status) => migration_status_rw.set("Success!"),
-                                    Err(e) => { migration_status_rw.set("Failure"); }
+                                    Ok(response_text) => {
+                                        migrate_results_rw.set(response_text);
+                                        //run server function compare results with preview to find ones not set
+                                        // verify_results()
+                                        migration_status_rw.set("Success".to_string())
+                                    }
+                                    Err(e) => { migration_status_rw.set(e.to_string()); }
                                 }
+                                current_step_rw.set(ViewSteps::Preview); 
                             });
                         }>"Migrate Project Configuration!"</button>
 

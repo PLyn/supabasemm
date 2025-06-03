@@ -1,4 +1,4 @@
-use crate::shared::models::{Project, ProjectConfig};
+use crate::shared::models::ProjectConfig;
 use leptos::prelude::*;
 
 #[component]

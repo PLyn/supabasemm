@@ -11,6 +11,10 @@ pub async fn generate_preview(
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use json_structural_diff::JsonDiff;
     use serde_json::Value;
+    use tower_sessions::Session;
+    use leptos_axum::extract;
+
+    let session: Session = extract().await?;
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut config_json: Vec<(String, String, String)> = Vec::new();
@@ -49,8 +53,11 @@ pub async fn generate_preview(
                 project_config.push(ProjectConfig { 
                     name: config_type.clone(), 
                     diffs: config_diffs, 
-                    config_json: body_string 
-                }); 
+                    config_json: body_string.clone() 
+                });
+                if let Err(e) = session.insert(config_type.as_str(), body_string).await {
+                    eprintln!("Failed to insert oauth_data into session: {:?}", e);
+                } 
             }            
         }
     }

@@ -11,7 +11,7 @@ pub fn server_init(
     };
 
     let session_store = MemoryStore::default();
-    let session_expiry = Expiry::OnInactivity(Duration::hours(1));
+    let session_expiry = Expiry::OnInactivity(Duration::hours(6));
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
         .with_same_site(tower_sessions::cookie::SameSite::Lax)
