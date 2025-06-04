@@ -3,7 +3,7 @@ use leptos::prelude::*;
 
 #[component]
 pub fn PreviewResultsView(
-    preview_results_rw: RwSignal<Vec<ProjectConfig>>
+    results_rw: RwSignal<Vec<ProjectConfig>>
 ) -> impl IntoView {
     view! {
         <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
@@ -19,7 +19,7 @@ pub fn PreviewResultsView(
                 </thead>
                 <tbody>
                     <For 
-                        each=move || preview_results_rw.get().into_iter()
+                        each=move || results_rw.get().into_iter()
                         key=|project_config| project_config.name.clone()
                         children=move |project_config| {
                             project_config.diffs.iter().map(|diff| {

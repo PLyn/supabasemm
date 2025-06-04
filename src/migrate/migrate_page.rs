@@ -30,8 +30,7 @@ pub fn MigratePage() -> impl IntoView {
     let source_project_rw = RwSignal::new("".to_string());
     let dest_project_rw = RwSignal::new("".to_string());
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
-    let preview_results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
-    let migrate_results_rw: RwSignal<String> = RwSignal::new("".to_string());
+    let results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
     let migration_status_rw: RwSignal<String> = RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
@@ -89,7 +88,7 @@ pub fn MigratePage() -> impl IntoView {
 
                         <Show when=move || config_items_rw.iter().any(|signal| signal.get().1) >
                             <button class="btn btn-primary mt-4"
-                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), preview_results_rw, current_step_rw); }>        
+                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), results_rw, current_step_rw); }>        
                                 "Preview Changes"
                             </button>
                         </Show>
@@ -111,10 +110,10 @@ pub fn MigratePage() -> impl IntoView {
                         <button class="btn btn-primary mt-4" on:click=move |_| {
                             current_step_rw.set(ViewSteps::Loading);
                             spawn_local(async move {
-                                let migrate_result = migrate_config(preview_results_rw.get(), dest_project_rw.get()).await;
+                                let migrate_result = migrate_config(results_rw.get(), dest_project_rw.get()).await;
                                 match migrate_result {
                                     Ok(response_text) => {
-                                        migrate_results_rw.set(response_text);
+                                        results_rw.set(response_text);
                                         //run server function compare results with preview to find ones not set
                                         // verify_results()
                                         migration_status_rw.set("Success".to_string())
@@ -125,7 +124,7 @@ pub fn MigratePage() -> impl IntoView {
                             });
                         }>"Migrate Project Configuration!"</button>
 
-                        <PreviewResultsView preview_results_rw />
+                        <PreviewResultsView results_rw />
                     </div>}.into_any() 
                 }
             }
@@ -133,13 +132,13 @@ pub fn MigratePage() -> impl IntoView {
     }
 }
 
-fn config_next_step_fn(source_project: String, dest_project: String, preview_results_rw: RwSignal<Vec<ProjectConfig>>, current_step_rw: RwSignal<ViewSteps>) {
+fn config_next_step_fn(source_project: String, dest_project: String, results_rw: RwSignal<Vec<ProjectConfig>>, current_step_rw: RwSignal<ViewSteps>) {
     current_step_rw.set(ViewSteps::Loading);
     spawn_local(async move {
         let project_config_option = generate_preview(source_project, dest_project).await;
         match project_config_option {
-            Ok(project_config) => preview_results_rw.set(project_config),
-            Err(_) => preview_results_rw.set(Vec::new())
+            Ok(project_config) => results_rw.set(project_config),
+            Err(_) => results_rw.set(Vec::new())
         } 
         current_step_rw.set(ViewSteps::Preview);    
     });

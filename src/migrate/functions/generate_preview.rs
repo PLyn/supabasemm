@@ -3,15 +3,13 @@ use crate::shared::server_functions::mgmt_api_get;
 use crate::migrate::migrate_page::ConfigItems;
 use leptos::prelude::*;
 
-#[cfg(feature = "ssr")]
-use serde_json::Value;
-
 #[server]
 pub async fn generate_preview(
     source_project: String,
     dest_project: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use super::json_diff;
+    use serde_json::Value;
     use tower_sessions::Session;
     use leptos_axum::extract;
 
@@ -44,15 +42,17 @@ pub async fn generate_preview(
         let source_value: Value = serde_json::from_str(&source_json)?;
         let dest_value: Value = serde_json::from_str(&dest_json)?;
 
-        let new_project_config = json_diff(config_type, source_value, dest_value, project_config).await?;
+        let project_config_entry = json_diff(config_type.clone(), source_value.clone(), dest_value).await?;
         
-        if let Some(last_config) = new_project_config.last() {
-            let last_config_json = &last_config;
-            if let Err(e) = session.insert(last_config_json.name.as_str(), last_config.config_json.clone()).await {
-                eprintln!("Failed to insert preview results into session: {:?}", e);
-            } 
+        if let Some(new_config_entry) = project_config_entry {
+            if let Some(current_config_entry) = project_config.iter_mut().find(|config| config.name == new_config_entry.name){
+                *current_config_entry = new_config_entry.clone();
+            }
+        } 
+
+        if let Err(e) = session.insert(config_type.as_str(), source_value).await {
+            eprintln!("Failed to insert preview results into session: {:?}", e);
         }
-        project_config = new_project_config;
     }
     Ok(project_config)
 }

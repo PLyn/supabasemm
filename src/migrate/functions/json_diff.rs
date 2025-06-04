@@ -6,7 +6,7 @@ use serde_json::Value;
 use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
-pub async fn json_diff(config_type: String, source_value: Value, dest_value: Value, mut project_config: Vec<ProjectConfig>) -> Result<Vec<ProjectConfig>, ServerFnError> {
+pub async fn json_diff(config_type: String, source_value: Value, dest_value: Value) -> Result<Option<ProjectConfig>, ServerFnError> {
     use json_structural_diff::JsonDiff;
 
     let diff_option = JsonDiff::diff_string(&source_value, &dest_value, false);
@@ -15,14 +15,14 @@ pub async fn json_diff(config_type: String, source_value: Value, dest_value: Val
         let body_string = serde_json::to_string(&diff_map)?;
 
         if body_string.len() > 2 {
-            project_config.push(ProjectConfig { 
+            return Ok(Some(ProjectConfig { 
                 name: config_type.clone(), 
                 diffs: config_diffs, 
                 config_json: body_string.clone() 
-            });
+            }));
         }  
     }
-    Ok(project_config)
+    Ok(None)
 }
 
 #[cfg(feature = "ssr")]

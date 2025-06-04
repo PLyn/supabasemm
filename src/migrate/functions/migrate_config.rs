@@ -1,15 +1,15 @@
-//use crate::migrate::migrate_page::ConfigItems;
+use crate::migrate::migrate_page::ConfigItems;
 use crate::shared::models::ProjectConfig;
 use crate::shared::server_functions::mgmt_api_patch;
 use leptos::prelude::*;
-//#[cfg(feature = "ssr")]
-//use tower_sessions::Session;
 
 #[server]
 pub async fn migrate_config(
     project_config: Vec<ProjectConfig>,
     dest_project: String
-) -> Result<String, ServerFnError> {
+) -> Result<Vec<ProjectConfig>, ServerFnError> {
+    use super::json_diff;
+    use serde_json::Value;
     use tower_sessions::Session;
     use leptos_axum::extract;
 
@@ -27,26 +27,31 @@ pub async fn migrate_config(
     eprintln!("auth session data length: {}", auth_session_data.len());
 
     //let mut response_text: String;
-
-    for service in project_config {
+    let mut new_project_config = project_config.clone();
+    for service in new_project_config.iter_mut() {
         match service.name.as_str() {
             "Auth" => { 
-                let response = mgmt_api_patch(format!("/projects/{}/config/auth", dest_project), service.config_json).await;
-                match response {
-                    Ok(_) => { 
-                        //let access_token = session.get(format!("{:?}", ConfigItems::Auth).as_str()).await?;
-                        //response_text = text
-                    },
-                    Err(e) => {
-                        eprintln!("{:?}", e);
-                        return Err(e);
-                    }
+                let session_key = format!("{:?}", ConfigItems::Auth);
+                let response = mgmt_api_patch(format!("/projects/{}/config/auth", dest_project), service.config_json.clone()).await?;
+                let auth_session_data: Option<Value> = session.get(session_key.as_str()).await?;
+
+                if let Some(session_config) = auth_session_data {
+                    let dest_value: Value = serde_json::from_str(&response)?;
+                    let project_config_entry = json_diff(session_key.clone(), session_config.clone(), dest_value).await?;
+                    
+                    if let Some(new_config_entry) = project_config_entry {
+                        if new_config_entry.name == service.name {
+                            *service = new_config_entry.clone();
+                            eprintln!("Removing auth session data: {:?}", session_config);
+                            session.remove::<String>(session_key.as_str()).await.ok();
+                        }
+                    }     
                 }
             }
-            _ => return Ok("Migration completed successfully".to_string())
+            _ => {}
         }
     }
-    Ok("Migration completed successfully".to_string())
+    Ok(new_project_config)
 }
 
 /* #[cfg(feature = "ssr")]
