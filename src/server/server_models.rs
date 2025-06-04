@@ -11,7 +11,6 @@ impl AppConfig {
         use dotenvy::dotenv;
         use std::env;
 
-        eprintln!("Loading environment variables for OAuth2 configuration...");
         dotenv().ok();
 
         let client_id = env::var("SUPA_CONNECT_CLIENT_ID")
@@ -20,9 +19,6 @@ impl AppConfig {
             .map_err(|e| format!("SUPA_CONNECT_CLIENT_SECRET not found: {}", e))?;
         let redirect_uri =
             env::var("REDIRECT_URI").map_err(|e| format!("REDIRECT_URI not found: {}", e))?;
-
-        eprintln!("Client ID: {}", client_id);
-        eprintln!("Redirect URI: {}", redirect_uri);
 
         Ok(Self {
             client_id,

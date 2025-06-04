@@ -19,7 +19,8 @@ pub enum ConfigItems{
     EdgeFunctions = 2,
     Secrets = 3,
     Storage = 4,
-    Branches = 5
+    Postgres = 5,
+    Branches = 6
 }
 
 #[component]
@@ -34,12 +35,13 @@ pub fn MigratePage() -> impl IntoView {
     let migration_status_rw: RwSignal<String> = RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
-    let config_items_rw: [RwSignal<(String, bool)>; 6] = [
+    let config_items_rw: [RwSignal<(String, bool)>; 7] = [
         RwSignal::new((format!("{:?}", ConfigItems::Auth), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Postgrest), false)),
         RwSignal::new((format!("{:?}", ConfigItems::EdgeFunctions), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Secrets), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Storage), false)),
+        RwSignal::new((format!("{:?}", ConfigItems::Postgres), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Branches), false))];
 
     Effect::new(move |_| {

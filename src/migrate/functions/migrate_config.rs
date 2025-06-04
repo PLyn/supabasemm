@@ -21,12 +21,11 @@ pub async fn migrate_config(
             ))
         }
     };
-    eprintln!("auth session data: {}", auth_session_data);
+    eprintln!("auth session data length: {}", auth_session_data.len());
 
     let mut response_text: String;
 
     for service in project_config {
-        eprintln!("{:?}", service.name);
         match service.name.as_str() {
             "Auth" => { 
                 let response = mgmt_api_patch(format!("/projects/{}/config/auth", dest_project), service.config_json).await;

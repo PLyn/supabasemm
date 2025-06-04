@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 #[component]
-pub fn ConfigSelectForm(config_items_rw: [RwSignal<(String, bool)>; 6]) -> impl IntoView {
+pub fn ConfigSelectForm(config_items_rw: [RwSignal<(String, bool)>; 7]) -> impl IntoView {
     view! {
         <table class="table table-fixed w-full">
             <colgroup>

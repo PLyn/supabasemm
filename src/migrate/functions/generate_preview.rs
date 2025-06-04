@@ -1,6 +1,8 @@
 use crate::shared::models::{DiffEntry, ProjectConfig};
 use crate::shared::server_functions::mgmt_api_get;
+use crate::migrate::migrate_page::ConfigItems;
 use leptos::prelude::*;
+
 #[cfg(feature = "ssr")]
 use serde_json::Value;
 
@@ -21,23 +23,23 @@ pub async fn generate_preview(
 
     let source_config = mgmt_api_get(format!("/projects/{}/config/auth", source_project_rw)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/config/auth", dest_project_rw)).await?;
-    config_json.push(("Auth".to_string(), source_config, dest_config));
+    config_json.push((format!("{:?}", ConfigItems::Auth), source_config, dest_config));
 
     let source_config = mgmt_api_get(format!("/projects/{}/postgrest", source_project_rw)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/postgrest", dest_project_rw)).await?;
-    config_json.push(("Postgrest".to_string(), source_config, dest_config));
+    config_json.push((format!("{:?}", ConfigItems::Postgrest), source_config, dest_config));
 
     let source_config = mgmt_api_get(format!("/projects/{}/functions", source_project_rw)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_project_rw)).await?;
-    config_json.push(("Edge Functions".to_string(), source_config, dest_config));
+    config_json.push((format!("{:?}", ConfigItems::EdgeFunctions), source_config, dest_config));
 
     let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_project_rw)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_project_rw)).await?;
-    config_json.push(("Project Secrets".to_string(), source_config, dest_config));
+    config_json.push((format!("{:?}", ConfigItems::Secrets), source_config, dest_config));
 
     let source_config = mgmt_api_get(format!("/projects/{}/config/database/postgres", source_project_rw)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/config/database/postgres",dest_project_rw)).await?;
-    config_json.push(("Postgres".to_string(), source_config, dest_config));
+    config_json.push((format!("{:?}", ConfigItems::Postgres), source_config, dest_config));
 
     for (config_type, source_json, dest_json) in config_json {
         let source_value: Value = serde_json::from_str(&source_json)?;
@@ -49,14 +51,14 @@ pub async fn generate_preview(
             let body_string = serde_json::to_string(&diff_map)?;
             
             if body_string.len() > 2 {
-                eprintln!("body: {:?} string Len: {}", body_string, body_string.len());
                 project_config.push(ProjectConfig { 
                     name: config_type.clone(), 
                     diffs: config_diffs, 
                     config_json: body_string.clone() 
                 });
+                eprintln!("{}", config_type);
                 if let Err(e) = session.insert(config_type.as_str(), body_string).await {
-                    eprintln!("Failed to insert oauth_data into session: {:?}", e);
+                    eprintln!("Failed to insert preview results into session: {:?}", e);
                 } 
             }            
         }
