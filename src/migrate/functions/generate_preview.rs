@@ -44,11 +44,9 @@ pub async fn generate_preview(
 
         let project_config_entry = json_diff(config_type.clone(), source_value.clone(), dest_value).await?;
         
-        if let Some(new_config_entry) = project_config_entry {
-            if let Some(current_config_entry) = project_config.iter_mut().find(|config| config.name == new_config_entry.name){
-                *current_config_entry = new_config_entry.clone();
-            }
-        } 
+        if let Some(config_entry) = project_config_entry {
+            project_config.push(config_entry);
+        }
 
         if let Err(e) = session.insert(config_type.as_str(), source_value).await {
             eprintln!("Failed to insert preview results into session: {:?}", e);

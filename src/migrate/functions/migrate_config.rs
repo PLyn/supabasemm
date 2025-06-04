@@ -12,7 +12,7 @@ pub async fn migrate_config(
     use serde_json::Value;
     use tower_sessions::Session;
     use leptos_axum::extract;
-
+    eprintln!("Start migrate");
     let session: Session = extract().await?;
     let auth_session_data_option: Option<String> = session.get("Auth").await?;
 
@@ -41,7 +41,7 @@ pub async fn migrate_config(
                     
                     if let Some(new_config_entry) = project_config_entry {
                         if new_config_entry.name == service.name {
-                            *service = new_config_entry.clone();
+                            *service = new_config_entry;
                             eprintln!("Removing auth session data: {:?}", session_config);
                             session.remove::<String>(session_key.as_str()).await.ok();
                         }

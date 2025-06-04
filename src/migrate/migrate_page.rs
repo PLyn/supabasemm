@@ -113,11 +113,14 @@ pub fn MigratePage() -> impl IntoView {
                             spawn_local(async move {
                                 let migrate_result = migrate_config(results_rw.get(), dest_project_rw.get()).await;
                                 match migrate_result {
-                                    Ok(response_text) => {
-                                        results_rw.set(response_text);
+                                    Ok(response) => {
+                                        results_rw.set(response);
                                         migration_status_rw.set("Success".to_string())
                                     }
-                                    Err(e) => { migration_status_rw.set(e.to_string()); }
+                                    Err(e) => { 
+                                        results_rw.set(Vec::new());
+                                        migration_status_rw.set(e.to_string()); 
+                                    }
                                 }
                                 current_step_rw.set(ViewSteps::Results); 
                             });
