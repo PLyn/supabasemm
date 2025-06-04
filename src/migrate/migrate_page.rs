@@ -1,5 +1,5 @@
 use crate::shared::models::{Project, ProjectConfig};
-use super::components::{ConfigSelectForm, ProjectSelectForm, PreviewResultsView};
+use super::components::{ConfigSelectForm, ProjectSelectForm, ResultsView};
 use super::functions::{generate_preview, migrate_config};
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
@@ -11,6 +11,7 @@ pub enum ViewSteps {
     Config,
     Loading,
     Preview,
+    Results
 }
 #[derive(Debug)]
 pub enum ConfigItems{
@@ -114,18 +115,31 @@ pub fn MigratePage() -> impl IntoView {
                                 match migrate_result {
                                     Ok(response_text) => {
                                         results_rw.set(response_text);
-                                        //run server function compare results with preview to find ones not set
-                                        // verify_results()
                                         migration_status_rw.set("Success".to_string())
                                     }
                                     Err(e) => { migration_status_rw.set(e.to_string()); }
                                 }
-                                current_step_rw.set(ViewSteps::Preview); 
+                                current_step_rw.set(ViewSteps::Results); 
                             });
                         }>"Migrate Project Configuration!"</button>
 
-                        <PreviewResultsView results_rw />
-                    </div>}.into_any() 
+                        <h3 class="text-2xl font-bold mb-4">"Preview Results"</h3>
+
+                        <ResultsView 
+                            results_rw 
+                            source_heading="Source".to_string()
+                            dest_heading="Destination".to_string() />
+                    </div>}.into_any(),
+                ViewSteps::Results => view! {
+                    <div class="flex flex-col items-center justify-center min-h-screen p-4">
+                        <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
+                        <h3 class="text-2xl font-bold mb-4">"Migration Results"</h3>
+
+                        <ResultsView 
+                            results_rw 
+                            source_heading="Config change to migrate".to_string()
+                            dest_heading="Current config after migration".to_string() />
+                    </div>}.into_any()  
                 }
             }
         </Show>

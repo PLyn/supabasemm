@@ -2,19 +2,20 @@ use crate::shared::models::ProjectConfig;
 use leptos::prelude::*;
 
 #[component]
-pub fn PreviewResultsView(
-    results_rw: RwSignal<Vec<ProjectConfig>>
+pub fn ResultsView(
+    results_rw: RwSignal<Vec<ProjectConfig>>,
+    source_heading: String,
+    dest_heading: String
 ) -> impl IntoView {
     view! {
-        <h3 class="text-2xl font-bold mb-4">Preview Results</h3>
         <div class="w-full max-w-8xl overflow-x-auto">
             <table class="table w-full border-collapse border border-black">
                 <thead>
                     <tr>
                         <th class="p-2 text-center bg-gray-300 border border-black">"Service"</th>
                         <th class="p-2 text-center bg-gray-300 border border-black">"Config Item"</th>
-                        <th class="p-2 text-center bg-gray-300 border border-black">"Source"</th>
-                        <th class="p-2 text-center bg-gray-300 border border-black">"Destination"</th>
+                        <th class="p-2 text-center bg-gray-300 border border-black">{source_heading}</th>
+                        <th class="p-2 text-center bg-gray-300 border border-black">{dest_heading}</th>
                     </tr>
                 </thead>
                 <tbody>

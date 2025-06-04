@@ -52,6 +52,10 @@ pub async fn login_handler(
         Err(e) => eprintln!("Error verifying oauth_data in session: {:?}", e),
     }
 
+    if let Err(e) = session.save().await {
+        eprintln!("Failed to save session: {:?}", e);
+    }
+
     eprintln!("oauth session stored for session ID: {:?}. Redirecting to Supabase...", session.id());
     Redirect::to(&constructed_url).into_response()
 }
