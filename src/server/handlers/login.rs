@@ -16,7 +16,7 @@ pub async fn login_handler(
     let access_token_option: Option<String> =
         session.get("supabase_access_token").await.ok().flatten();
 
-    if let Some(access_token) = access_token_option {
+    if let Some(_) = access_token_option {
         eprintln!("Existing Supabase access token found in session. Skipping full OAuth flow.");
         return Redirect::to("/connect-supabase/projects").into_response();
     }

@@ -17,8 +17,6 @@ impl AppConfig {
             .map_err(|e| format!("SUPA_CONNECT_CLIENT_ID not found: {}", e))?;
         let client_secret = env::var("SUPA_CONNECT_CLIENT_SECRET")
             .map_err(|e| format!("SUPA_CONNECT_CLIENT_SECRET not found: {}", e))?;
-        let redirect_uri =
-            env::var("REDIRECT_URI").map_err(|e| format!("REDIRECT_URI not found: {}", e))?;
 
         Ok(Self {
             client_id,
