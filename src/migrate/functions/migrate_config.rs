@@ -1,5 +1,5 @@
+use crate::shared::models::{AuthConfigStruct, ProjectConfig};
 use leptos::prelude::*;
-use crate::shared::models::ProjectConfig;
 
 #[server]
 pub async fn migrate_config(
@@ -8,14 +8,13 @@ pub async fn migrate_config(
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use crate::migrate::migrate_page::ConfigItems;
     use crate::shared::server_functions::mgmt_api_patch;
-    
+
     //server only imports
     use super::json_diff;
     use leptos_axum::extract;
     use serde_json::Value;
     use tower_sessions::Session;
-    use leptos_axum::extract;
-    
+
     eprintln!("Start migrate");
     let session: Session = extract().await?;
 
