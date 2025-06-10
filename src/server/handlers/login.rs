@@ -56,6 +56,9 @@ pub async fn login_handler(
         eprintln!("Failed to save session: {:?}", e);
     }
 
-    eprintln!("oauth session stored for session ID: {:?}. Redirecting to Supabase...", session.id());
+    eprintln!(
+        "oauth session stored for session ID: {:?}. Redirecting to Supabase...",
+        session.id()
+    );
     Redirect::to(&constructed_url).into_response()
 }

@@ -24,7 +24,11 @@ pub async fn callback_handler(
         Ok(data) => data,
         Err(_) => None,
     };
-    eprintln!("Session ID: {:?} to get oauth retrieved from session: {:?}", session.id(), oauth_data);
+    eprintln!(
+        "Session ID: {:?} to get oauth retrieved from session: {:?}",
+        session.id(),
+        oauth_data
+    );
     let oauth_data = match oauth_data {
         Some(data) => data,
         None => {

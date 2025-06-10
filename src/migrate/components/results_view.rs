@@ -5,7 +5,7 @@ use leptos::prelude::*;
 pub fn ResultsView(
     results_rw: RwSignal<Vec<ProjectConfig>>,
     source_heading: String,
-    dest_heading: String
+    dest_heading: String,
 ) -> impl IntoView {
     view! {
         <div class="w-full max-w-8xl overflow-x-auto">
@@ -19,7 +19,7 @@ pub fn ResultsView(
                     </tr>
                 </thead>
                 <tbody>
-                    <For 
+                    <For
                         each=move || results_rw.get().into_iter()
                         key=|project_config| project_config.name.clone()
                         children=move |project_config| {
@@ -31,7 +31,7 @@ pub fn ResultsView(
                                         <td class="p-2 border border-black">{diff.source_value.clone()}</td>
                                         <td class="p-2 border border-black">{diff.dest_value.clone()}</td>
                                     </tr>
-                                }    
+                                }
                             }).collect::<Vec<_>>().into_view()
                         }
                     />

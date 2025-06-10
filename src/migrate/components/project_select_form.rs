@@ -6,37 +6,58 @@ use leptos::prelude::*;
 pub fn ProjectSelectForm(
     source_project_rw: RwSignal<String>,
     dest_project_rw: RwSignal<String>,
-    projects_list: ReadSignal<Vec::<Project>>,
-    next_step_fn: impl Fn() + 'static + Clone + Send + Sync
+    projects_list: ReadSignal<Vec<Project>>,
+    next_step_fn: impl Fn() + 'static + Clone + Send + Sync,
 ) -> impl IntoView {
-
     let validate_source = Signal::derive(move || {
-        if source_project_rw.get().is_empty() { return "Please select a source project.".to_string(); }
+        if source_project_rw.get().is_empty() {
+            return "Please select a source project.".to_string();
+        }
 
-        if let Some(project) = projects_list.get().iter().find(|p| p.id == source_project_rw.get()) {
-            if project.status == "INACTIVE" { return "Selected source project is INACTIVE.".to_string(); }
+        if let Some(project) = projects_list
+            .get()
+            .iter()
+            .find(|p| p.id == source_project_rw.get())
+        {
+            if project.status == "INACTIVE" {
+                return "Selected source project is INACTIVE.".to_string();
+            }
         }
         String::new()
     });
 
     let validate_destination = Signal::derive(move || {
-        if dest_project_rw.get().is_empty() { return "Please select a destination project.".to_string(); }
+        if dest_project_rw.get().is_empty() {
+            return "Please select a destination project.".to_string();
+        }
 
-        if let Some(project) = projects_list.get().iter().find(|p| p.id == dest_project_rw.get()) {
-            if project.status == "INACTIVE" { return "Selected destination project is INACTIVE.".to_string(); }
+        if let Some(project) = projects_list
+            .get()
+            .iter()
+            .find(|p| p.id == dest_project_rw.get())
+        {
+            if project.status == "INACTIVE" {
+                return "Selected destination project is INACTIVE.".to_string();
+            }
         }
         String::new()
     });
 
     let validate_form = Signal::derive(move || {
-        if !source_project_rw.get().is_empty() && !dest_project_rw.get().is_empty() && source_project_rw.get() == dest_project_rw.get() {
+        if !source_project_rw.get().is_empty()
+            && !dest_project_rw.get().is_empty()
+            && source_project_rw.get() == dest_project_rw.get()
+        {
             return "Source and destination projects cannot be the same.".to_string();
         }
         String::new()
     });
 
     let is_validated = Signal::derive(move || {
-        if validate_source.get().is_empty() && validate_destination.get().is_empty() && validate_form.get().is_empty() {
+        if validate_source.get().is_empty()
+            && validate_destination.get().is_empty()
+            && validate_form.get().is_empty()
+        {
             return "No Validation Errors Found. You may proceed!".to_string();
         }
         String::new()

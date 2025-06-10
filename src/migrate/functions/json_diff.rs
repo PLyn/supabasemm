@@ -1,12 +1,16 @@
 #[cfg(feature = "ssr")]
 use crate::shared::models::{DiffEntry, ProjectConfig};
 
+use leptos::prelude::*;
 #[cfg(feature = "ssr")]
 use serde_json::Value;
-use leptos::prelude::*;
 
 #[cfg(feature = "ssr")]
-pub async fn json_diff(config_type: String, source_value: Value, dest_value: Value) -> Result<Option<ProjectConfig>, ServerFnError> {
+pub async fn json_diff(
+    config_type: String,
+    source_value: Value,
+    dest_value: Value,
+) -> Result<Option<ProjectConfig>, ServerFnError> {
     use json_structural_diff::JsonDiff;
 
     let diff_option = JsonDiff::diff_string(&source_value, &dest_value, false);
@@ -15,20 +19,19 @@ pub async fn json_diff(config_type: String, source_value: Value, dest_value: Val
         let body_string = serde_json::to_string(&diff_map)?;
 
         if body_string.len() > 2 {
-            return Ok(Some(ProjectConfig { 
-                name: config_type.clone(), 
-                diffs: config_diffs, 
-                config_json: body_string.clone() 
+            return Ok(Some(ProjectConfig {
+                name: config_type.clone(),
+                diffs: config_diffs,
             }));
-        }  
+        }
     }
     Ok(None)
 }
 
 #[cfg(feature = "ssr")]
 fn format_diff_output(diff_str: &str) -> (Vec<DiffEntry>, Value) {
-    use std::collections::HashMap;
     use serde_json::json;
+    use std::collections::HashMap;
 
     let mut source_map: HashMap<String, String> = HashMap::new();
     let mut dest_map: HashMap<String, String> = HashMap::new();

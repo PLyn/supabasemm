@@ -1,6 +1,6 @@
-use crate::shared::models::{Project, ProjectConfig};
 use super::components::{ConfigSelectForm, ProjectSelectForm, ResultsView};
 use super::functions::{generate_preview, migrate_config};
+use crate::shared::models::{Project, ProjectConfig};
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -11,17 +11,17 @@ pub enum ViewSteps {
     Config,
     Loading,
     Preview,
-    Results
+    Results,
 }
 #[derive(Debug)]
-pub enum ConfigItems{
+pub enum ConfigItems {
     Auth = 0,
     Postgrest = 1,
     EdgeFunctions = 2,
     Secrets = 3,
     Storage = 4,
     Postgres = 5,
-    Branches = 6
+    Branches = 6,
 }
 
 #[component]
@@ -32,7 +32,8 @@ pub fn MigratePage() -> impl IntoView {
     let dest_project_rw = RwSignal::new("".to_string());
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
     let results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
-    let migration_status_rw: RwSignal<String> = RwSignal::new("Migration Status: Migration has not been run".to_string());
+    let migration_status_rw: RwSignal<String> =
+        RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
     let config_items_rw: [RwSignal<(String, bool)>; 7] = [
@@ -42,7 +43,8 @@ pub fn MigratePage() -> impl IntoView {
         RwSignal::new((format!("{:?}", ConfigItems::Secrets), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Storage), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Postgres), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Branches), false))];
+        RwSignal::new((format!("{:?}", ConfigItems::Branches), false)),
+    ];
 
     Effect::new(move |_| {
         spawn_local(async move {
@@ -74,12 +76,12 @@ pub fn MigratePage() -> impl IntoView {
         </Show>
         <Show when=move || is_authenticated.get() >
             {move || match current_step_rw.get() {
-                ViewSteps::Projects => view! {      
+                ViewSteps::Projects => view! {
                     <ProjectSelectForm
                         source_project_rw
                         dest_project_rw
                         projects_list
-                        next_step_fn=move || { current_step_rw.set(ViewSteps::Config); } 
+                        next_step_fn=move || { current_step_rw.set(ViewSteps::Config); }
                     />}.into_any(),
                 ViewSteps::Config => view! {
                     <div class="flex flex-col items-center">
@@ -89,7 +91,7 @@ pub fn MigratePage() -> impl IntoView {
 
                         <Show when=move || config_items_rw.iter().any(|signal| signal.get().1) >
                             <button class="btn btn-primary mt-4"
-                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), results_rw, current_step_rw); }>        
+                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), results_rw, current_step_rw); }>
                                 "Preview Changes"
                             </button>
                         </Show>
@@ -117,19 +119,19 @@ pub fn MigratePage() -> impl IntoView {
                                         results_rw.set(response);
                                         migration_status_rw.set("Success".to_string())
                                     }
-                                    Err(e) => { 
+                                    Err(e) => {
                                         results_rw.set(Vec::new());
-                                        migration_status_rw.set(e.to_string()); 
+                                        migration_status_rw.set(e.to_string());
                                     }
                                 }
-                                current_step_rw.set(ViewSteps::Results); 
+                                current_step_rw.set(ViewSteps::Results);
                             });
                         }>"Migrate Project Configuration!"</button>
 
                         <h3 class="text-2xl font-bold mb-4">"Preview Results"</h3>
 
-                        <ResultsView 
-                            results_rw 
+                        <ResultsView
+                            results_rw
                             source_heading="Source".to_string()
                             dest_heading="Destination".to_string() />
                     </div>}.into_any(),
@@ -138,25 +140,30 @@ pub fn MigratePage() -> impl IntoView {
                         <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
                         <h3 class="text-2xl font-bold mb-4">"Migration Results"</h3>
 
-                        <ResultsView 
-                            results_rw 
+                        <ResultsView
+                            results_rw
                             source_heading="Config change to migrate".to_string()
                             dest_heading="Current config after migration".to_string() />
-                    </div>}.into_any()  
+                    </div>}.into_any()
                 }
             }
         </Show>
     }
 }
 
-fn config_next_step_fn(source_project: String, dest_project: String, results_rw: RwSignal<Vec<ProjectConfig>>, current_step_rw: RwSignal<ViewSteps>) {
+fn config_next_step_fn(
+    source_project: String,
+    dest_project: String,
+    results_rw: RwSignal<Vec<ProjectConfig>>,
+    current_step_rw: RwSignal<ViewSteps>,
+) {
     current_step_rw.set(ViewSteps::Loading);
     spawn_local(async move {
         let project_config_option = generate_preview(source_project, dest_project).await;
         match project_config_option {
             Ok(project_config) => results_rw.set(project_config),
-            Err(_) => results_rw.set(Vec::new())
-        } 
-        current_step_rw.set(ViewSteps::Preview);    
+            Err(_) => results_rw.set(Vec::new()),
+        }
+        current_step_rw.set(ViewSteps::Preview);
     });
 }

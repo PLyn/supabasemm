@@ -18,7 +18,6 @@ pub struct Project {
 pub struct ProjectConfig {
     pub name: String,
     pub diffs: Vec<DiffEntry>,
-    pub config_json: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
