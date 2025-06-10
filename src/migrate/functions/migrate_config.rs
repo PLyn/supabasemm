@@ -4,50 +4,51 @@ use crate::shared::models::ProjectConfig;
 #[server]
 pub async fn migrate_config(
     project_config: Vec<ProjectConfig>,
-    dest_project: String
+    dest_project: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use crate::migrate::migrate_page::ConfigItems;
     use crate::shared::server_functions::mgmt_api_patch;
     
     //server only imports
     use super::json_diff;
+    use leptos_axum::extract;
     use serde_json::Value;
     use tower_sessions::Session;
     use leptos_axum::extract;
     
     eprintln!("Start migrate");
     let session: Session = extract().await?;
-    let auth_session_data_option: Option<String> = session.get("Auth").await?;
-
-    let auth_session_data = match auth_session_data_option {
-        Some(data) => data,
-        None => {
-            return Err(ServerFnError::ServerError(
-                "No session data found for Auth service".to_string(),
-            ))
-        }
-    };
-    eprintln!("auth session data length: {}", auth_session_data.len());
 
     let mut new_project_config = project_config.clone();
     for service in new_project_config.iter_mut() {
         match service.name.as_str() {
-            "Auth" => { 
+            "Auth" => {
                 let session_key = format!("{:?}", ConfigItems::Auth);
-                let response = mgmt_api_patch(format!("/projects/{}/config/auth", dest_project), service.config_json.clone()).await?;
-                let auth_session_data: Option<Value> = session.get(session_key.as_str()).await?;
+                let auth_config: Option<String> = session.get(session_key.as_str()).await?;
 
-                if let Some(session_config) = auth_session_data {
+                if let Some(source_json) = auth_config {
+                    let config: AuthConfigStruct = serde_json::from_str(&source_json.clone())?;
+                    let patched_config: AuthConfigStruct = config.prepare_for_patch();
+                    let patch_json = serde_json::to_string(&patched_config)?;
+                    eprintln!("Patch JSON: {}", patch_json.clone());
+                    let response = mgmt_api_patch(
+                        format!("/projects/{}/config/auth", dest_project),
+                        patch_json.clone(),
+                    )
+                    .await?;
+
+                    let source_value: Value = serde_json::from_str(&source_json)?;
                     let dest_value: Value = serde_json::from_str(&response)?;
-                    let project_config_entry = json_diff(session_key.clone(), session_config.clone(), dest_value).await?;
-                    
+                    let project_config_entry =
+                        json_diff(session_key.clone(), source_value, dest_value).await?;
+
                     if let Some(new_config_entry) = project_config_entry {
                         if new_config_entry.name == service.name {
                             *service = new_config_entry;
-                            eprintln!("Removing auth session data: {:?}", session_config);
+                            eprintln!("Removing auth session data");
                             session.remove::<String>(session_key.as_str()).await.ok();
                         }
-                    }     
+                    }
                 }
             }
             _ => {}
