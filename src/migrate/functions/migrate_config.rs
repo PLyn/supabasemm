@@ -1,17 +1,20 @@
-use crate::migrate::migrate_page::ConfigItems;
-use crate::shared::models::ProjectConfig;
-use crate::shared::server_functions::mgmt_api_patch;
 use leptos::prelude::*;
+use crate::shared::models::ProjectConfig;
 
 #[server]
 pub async fn migrate_config(
     project_config: Vec<ProjectConfig>,
     dest_project: String
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
+    use crate::migrate::migrate_page::ConfigItems;
+    use crate::shared::server_functions::mgmt_api_patch;
+    
+    //server only imports
     use super::json_diff;
     use serde_json::Value;
     use tower_sessions::Session;
     use leptos_axum::extract;
+    
     eprintln!("Start migrate");
     let session: Session = extract().await?;
     let auth_session_data_option: Option<String> = session.get("Auth").await?;
@@ -26,7 +29,6 @@ pub async fn migrate_config(
     };
     eprintln!("auth session data length: {}", auth_session_data.len());
 
-    //let mut response_text: String;
     let mut new_project_config = project_config.clone();
     for service in new_project_config.iter_mut() {
         match service.name.as_str() {
@@ -53,21 +55,3 @@ pub async fn migrate_config(
     }
     Ok(new_project_config)
 }
-
-/* #[cfg(feature = "ssr")]
-async fn compare_preview_with_results(session: Session, result: String) -> Vec<DiffEntry> {
-    let mut diff_entries: Vec<DiffEntry> = Vec::new();
-    let access_token = session.get("supabase_access_token").await;
-
-    let access_token = match access_token {
-        Some(token) => token,
-        None => {
-            return Err(ServerFnError::ServerError(
-                "No access token found in session".to_string(),
-            ))
-        }
-    };
-
-    diff_entries
-}
- */
