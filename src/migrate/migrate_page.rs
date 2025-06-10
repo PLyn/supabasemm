@@ -23,6 +23,7 @@ pub enum ConfigItems {
     Postgres = 5,
     Branches = 6,
 }
+const CONFIG_ITEM_COUNT: usize = 7;
 
 #[component]
 pub fn MigratePage() -> impl IntoView {
@@ -36,7 +37,7 @@ pub fn MigratePage() -> impl IntoView {
         RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
-    let config_items_rw: [RwSignal<(String, bool)>; 7] = [
+    let config_items_rw: [RwSignal<(String, bool)>; CONFIG_ITEM_COUNT] = [
         RwSignal::new((format!("{:?}", ConfigItems::Auth), false)),
         RwSignal::new((format!("{:?}", ConfigItems::Postgrest), false)),
         RwSignal::new((format!("{:?}", ConfigItems::EdgeFunctions), false)),
