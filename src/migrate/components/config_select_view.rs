@@ -14,109 +14,80 @@ pub fn ConfigSelectView(
 ) -> impl IntoView {
     view! {
         <div class="min-h-screen flex items-center justify-center">
-            <div class="max-w-screen-sm mx-auto w-full p-4"> // Added p-4 for some padding
+            <div class="max-w-screen-sm mx-auto w-full p-4">
                 <div class="flex flex-col items-center">
                     <button class="btn btn-secondary my-4" on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>"Back"</button>
-
-                    <table class="table table-fixed w-full">
-                        <colgroup>
-                            <col style="width: 40%;" />
-                            <col style="width: 60%;" />
-                        </colgroup>
-                        <tbody>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Auth)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Auth)}
-                                        bind:checked=config_items_rw[ConfigItems::Auth as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Postgrest)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Postgrest)}
-                                        bind:checked=config_items_rw[ConfigItems::Postgrest as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::EdgeFunctions)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::EdgeFunctions)}
-                                        bind:checked=config_items_rw[ConfigItems::EdgeFunctions as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Secrets)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Secrets)}
-                                        bind:checked=config_items_rw[ConfigItems::Secrets as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Storage)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Storage)}
-                                        bind:checked=config_items_rw[ConfigItems::Storage as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Postgres)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Postgres)}
-                                        bind:checked=config_items_rw[ConfigItems::Postgres as usize]
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">
-                                    <label class="mr-2">{format!("{:?}", ConfigItems::Branches)}</label>
-                                </td>
-                                <td class="text-right">
-                                    <input
-                                        class="checkbox checkbox-info"
-                                        type="checkbox"
-                                        name={format!("{:?}", ConfigItems::Branches)}
-                                        bind:checked=config_items_rw[ConfigItems::Branches as usize]
-                                    />
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="w-full max-w-xs mx-auto">
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Auth)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Auth)}
+                                bind:checked=config_items_rw[ConfigItems::Auth as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Postgrest)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Postgrest)}
+                                bind:checked=config_items_rw[ConfigItems::Postgrest as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::EdgeFunctions)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::EdgeFunctions)}
+                                bind:checked=config_items_rw[ConfigItems::EdgeFunctions as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Secrets)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Secrets)}
+                                bind:checked=config_items_rw[ConfigItems::Secrets as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Storage)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Storage)}
+                                bind:checked=config_items_rw[ConfigItems::Storage as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Postgres)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Postgres)}
+                                bind:checked=config_items_rw[ConfigItems::Postgres as usize]
+                            />
+                        </label>
+                        <div class="divider"></div>
+                        <label class="flex items-center justify-between py-2 w-full cursor-pointer">
+                            <span>{format!("{:?}", ConfigItems::Branches)}</span>
+                            <input
+                                class="checkbox checkbox-success"
+                                type="checkbox"
+                                name={format!("{:?}", ConfigItems::Branches)}
+                                bind:checked=config_items_rw[ConfigItems::Branches as usize]
+                            />
+                        </label>
+                    </div>
 
                     <Show when=move || config_items_rw.iter().any(|signal| signal.get()) >
                         <button class="btn btn-primary mt-4"

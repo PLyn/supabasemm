@@ -1,4 +1,5 @@
-Tailwind CLI command -  ./tailwindcss/cli.exe -i ./style/input.css -o ./style/output.css --watch --minify
+Tailwind CLI command (windows) -  ./tailwindcss/cli.exe -i ./style/input.css -o ./style/output.css --watch --minify
+Tailwind CLI command (linux) -  ./tailwindcss/cli -i ./style/input.css -o ./style/output.css --watch --minify
 
 # Leptos Axum Starter Template
 
