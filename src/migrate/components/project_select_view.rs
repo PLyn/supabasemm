@@ -3,7 +3,7 @@ use crate::shared::models::Project;
 use leptos::prelude::*;
 
 #[component]
-pub fn ProjectSelectForm(
+pub fn ProjectSelectView(
     source_project_rw: RwSignal<String>,
     dest_project_rw: RwSignal<String>,
     projects_list: ReadSignal<Vec<Project>>,

@@ -608,3 +608,30 @@ impl AuthConfigStruct {
         self
     }
 }
+
+#[derive(Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
+pub struct FunctionConfigStruct {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slug: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verify_jwt: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import_map: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entrypoint_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import_map_path: Option<String>,
+}

@@ -1,5 +1,5 @@
-use super::components::{ConfigSelectForm, ProjectSelectForm, ResultsView};
-use super::functions::{generate_preview, migrate_config};
+use super::components::{ConfigSelectView, ProjectSelectView, ResultsView};
+use super::functions::migrate_config;
 use crate::shared::models::{Project, ProjectConfig};
 use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
@@ -78,33 +78,37 @@ pub fn MigratePage() -> impl IntoView {
         <Show when=move || is_authenticated.get() >
             {move || match current_step_rw.get() {
                 ViewSteps::Projects => view! {
-                    <ProjectSelectForm
+                    <ProjectSelectView
                         source_project_rw
                         dest_project_rw
                         projects_list
                         next_step_fn=move || { current_step_rw.set(ViewSteps::Config); }
                     />}.into_any(),
                 ViewSteps::Config => view! {
-                    <div class="flex flex-col items-center">
-                        <button class="btn btn-secondary my-4" on:click=move |_| { current_step_rw.set(ViewSteps::Projects); }>"Back"</button>
-
-                        <ConfigSelectForm config_items_rw />
-
-                        <Show when=move || config_items_rw.iter().any(|signal| signal.get().1) >
-                            <button class="btn btn-primary mt-4"
-                                on:click=move |_| { config_next_step_fn(source_project_rw.get(), dest_project_rw.get(), results_rw, current_step_rw); }>
-                                "Preview Changes"
-                            </button>
-                        </Show>
-                    </div>}.into_any(),
+                    <ConfigSelectView
+                        config_items_rw
+                        source_project_rw
+                        dest_project_rw
+                        results_rw
+                        current_step_rw />
+                }.into_any(),
                 ViewSteps::Loading => view! {
                     <div class="flex flex-col items-center justify-center h-screen">
-                        <h3>Loading...</h3>
-                        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="40" stroke="#007bff" stroke-width="4" fill="none">
-                                <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 50 50" to="360 50 50" dur="1s" repeatCount="indefinite" />
-                            </circle>
-                        </svg>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Loading...</h3>
+                    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="15" y="30" width="10" height="20" fill="#3B82F6" rx="5">
+                            <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite" />
+                            <animate attributeName="y" values="30;20;30" dur="1s" repeatCount="indefinite" />
+                        </rect>
+                        <rect x="35" y="30" width="10" height="20" fill="#8B5CF6" rx="5">
+                            <animate attributeName="height" values="20;40;20" dur="1s" begin="0.2s" repeatCount="indefinite" />
+                            <animate attributeName="y" values="30;20;30" dur="1s" begin="0.2s" repeatCount="indefinite" />
+                        </rect>
+                        <rect x="55" y="30" width="10" height="20" fill="#EC4899" rx="5">
+                            <animate attributeName="height" values="20;40;20" dur="1s" begin="0.4s" repeatCount="indefinite" />
+                            <animate attributeName="y" values="30;20;30" dur="1s" begin="0.4s" repeatCount="indefinite" />
+                        </rect>
+                    </svg>
                     </div>}.into_any(),
                 ViewSteps::Preview => view! {
                     <div class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -135,7 +139,8 @@ pub fn MigratePage() -> impl IntoView {
                             results_rw
                             source_heading="Source".to_string()
                             dest_heading="Destination".to_string() />
-                    </div>}.into_any(),
+                    </div>
+                }.into_any(),
                 ViewSteps::Results => view! {
                     <div class="flex flex-col items-center justify-center min-h-screen p-4">
                         <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
@@ -145,26 +150,10 @@ pub fn MigratePage() -> impl IntoView {
                             results_rw
                             source_heading="Config change to migrate".to_string()
                             dest_heading="Current config after migration".to_string() />
-                    </div>}.into_any()
+                    </div>
+                }.into_any()
                 }
             }
         </Show>
     }
-}
-
-fn config_next_step_fn(
-    source_project: String,
-    dest_project: String,
-    results_rw: RwSignal<Vec<ProjectConfig>>,
-    current_step_rw: RwSignal<ViewSteps>,
-) {
-    current_step_rw.set(ViewSteps::Loading);
-    spawn_local(async move {
-        let project_config_option = generate_preview(source_project, dest_project).await;
-        match project_config_option {
-            Ok(project_config) => results_rw.set(project_config),
-            Err(_) => results_rw.set(Vec::new()),
-        }
-        current_step_rw.set(ViewSteps::Preview);
-    });
 }

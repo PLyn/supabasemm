@@ -1,14 +1,13 @@
 use crate::shared::models::ProjectConfig;
 use leptos::prelude::*;
+use crate::migrate::migrate_page::ConfigItems;
+use crate::shared::server_functions::mgmt_api_get;
 
 #[server]
 pub async fn generate_preview(
     source_project: String,
     dest_project: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
-    use crate::migrate::migrate_page::ConfigItems;
-    use crate::shared::server_functions::mgmt_api_get;
-
     //server only imports
     use super::json_diff;
     use leptos_axum::extract;
@@ -50,14 +49,28 @@ pub async fn generate_preview(
         dest_config,
     ));
 
-    let source_config = mgmt_api_get(format!("/projects/{}/functions", source_project)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_project)).await?;
-    config_json.push((
-        format!("{:?}", ConfigItems::EdgeFunctions),
-        source_config,
-        dest_config,
-    ));
+    // EDGE FUNCTIONS
+    let config_name = format!("{:?}", ConfigItems::EdgeFunctions);
+    let source_url = format!("/projects/{}/functions", source_project);
+    let source_config = mgmt_api_get(source_url).await?;
+    let dest_url = format!("/projects/{}/functions", dest_project);
+    let dest_config = mgmt_api_get(dest_url).await?;
+    
+    eprintln!("source: {} || Dest: {}", source_config, dest_config);
 
+    let source_value: Value = serde_json::from_str(&source_config)?;
+    let dest_value: Value = serde_json::from_str(&dest_config)?;
+    let project_config_entry = json_diff(config_name.clone(), source_value, dest_value).await?;
+
+    if let Some(config_entry) = project_config_entry {
+        project_config.push(config_entry);
+    }
+
+    if let Err(e) = session.insert(config_name.as_str(), source_config).await {
+        eprintln!("Failed to insert preview results into session: {:?}", e);
+    }
+
+    // SECRETS
     let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_project)).await?;
     let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_project)).await?;
     config_json.push((
