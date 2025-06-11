@@ -15,5 +15,3 @@ playwright/.cache/
 *.env
 
 *.exe
-daisyui.js
-daisyui-theme.js
