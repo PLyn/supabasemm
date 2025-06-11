@@ -1,4 +1,4 @@
-use crate::shared::models::{AuthConfigStruct, ProjectConfig};
+use crate::shared::models::ProjectConfig;
 use leptos::prelude::*;
 
 #[server]
@@ -7,6 +7,7 @@ pub async fn migrate_config(
     dest_project: String,
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use crate::migrate::migrate_page::ConfigItems;
+    use crate::shared::models::AuthConfigStruct;
     use crate::shared::server_functions::mgmt_api_patch;
 
     //server only imports

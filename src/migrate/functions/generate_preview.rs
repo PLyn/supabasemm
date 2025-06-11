@@ -1,6 +1,5 @@
-use crate::migrate::migrate_page::{ConfigItems, CONFIG_ITEM_COUNT};
+use crate::migrate::migrate_page::CONFIG_ITEM_COUNT;
 use crate::shared::models::ProjectConfig;
-use crate::shared::server_functions::mgmt_api_get;
 use leptos::prelude::*;
 
 #[server]
@@ -9,6 +8,9 @@ pub async fn generate_preview(
     dest_project: String,
     config_items_rw: [RwSignal<bool>; CONFIG_ITEM_COUNT],
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
+    use crate::migrate::migrate_page::ConfigItems;
+    use crate::shared::server_functions::mgmt_api_get;
+
     //server only imports
     use super::json_diff;
     use leptos_axum::extract;
@@ -72,6 +74,8 @@ pub async fn generate_preview(
             dest_project
         ))
         .await?;
+
+        eprintln!("postgres src: {} || dest: {}", source_config, dest_config);
         config_json.push((
             format!("{:?}", ConfigItems::Postgres),
             source_config,
@@ -79,18 +83,17 @@ pub async fn generate_preview(
         ));
     }
 
-    for (config_type, source_json, dest_json) in config_json {
-        let source_value: Value = serde_json::from_str(&source_json)?;
-        let dest_value: Value = serde_json::from_str(&dest_json)?;
+    for (service, source_json, dest_json) in config_json {
+        let source: Value = serde_json::from_str(&source_json)?;
+        let dest: Value = serde_json::from_str(&dest_json)?;
 
-        let project_config_entry =
-            json_diff(config_type.clone(), source_value.clone(), dest_value).await?;
+        let project_config_entry = json_diff(service.clone(), source.clone(), dest).await?;
 
         if let Some(config_entry) = project_config_entry {
             project_config.push(config_entry);
         }
 
-        if let Err(e) = session.insert(config_type.as_str(), source_value).await {
+        if let Err(e) = session.insert(service.as_str(), source).await {
             eprintln!("Failed to insert preview results into session: {:?}", e);
         }
     }

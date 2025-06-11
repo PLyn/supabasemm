@@ -94,19 +94,14 @@ fn diff_values(path: &str, source: &Value, dest: &Value, diffs: &mut Vec<DiffEnt
 
 #[cfg(feature = "ssr")]
 fn diff_arrays(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffEntry>) {
-    // Don't report length differences - removed this section
-
-    // Check if arrays contain objects with IDs
     let src_map = to_id_map(src);
     let dst_map = to_id_map(dst);
 
     match (src_map, dst_map) {
-        (Some(src_ids), Some(dst_ids)) => {
-            // Both arrays have objects with IDs
-            diff_by_id(path, src_ids, dst_ids, diffs);
+        (Some(src_ids), Some(mut dst_ids)) => {
+            diff_by_id(path, &src_ids, &mut dst_ids, diffs);
         }
         (Some(src_ids), None) => {
-            // Only source has objects with IDs, destination is empty or has no IDs
             for (id, val) in src_ids {
                 diffs.push(DiffEntry {
                     key: format!(
@@ -121,7 +116,6 @@ fn diff_arrays(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffEnt
             }
         }
         (None, Some(dst_ids)) => {
-            // Only destination has objects with IDs
             for (id, val) in dst_ids {
                 diffs.push(DiffEntry {
                     key: format!(
@@ -136,7 +130,6 @@ fn diff_arrays(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffEnt
             }
         }
         (None, None) => {
-            // Neither array has objects with IDs, use index-based comparison
             diff_by_index(path, src, dst, diffs);
         }
     }
@@ -166,53 +159,40 @@ fn to_id_map(arr: &[Value]) -> Option<HashMap<String, &Value>> {
 #[cfg(feature = "ssr")]
 fn diff_by_id(
     path: &str,
-    src_map: HashMap<String, &Value>,
-    dst_map: HashMap<String, &Value>,
+    src_map: &HashMap<String, &Value>,
+    dst_map: &mut HashMap<String, &Value>,
     diffs: &mut Vec<DiffEntry>,
 ) {
-    // Find removed items
-    for (id, src_val) in &src_map {
-        if !dst_map.contains_key(id) {
+    for (id, src_val) in src_map {
+        let item_path = format!(
+            "{}{}id:{}",
+            path,
+            if path.is_empty() { "" } else { "." },
+            id
+        );
+
+        if let Some(dst_val) = dst_map.remove(id) {
+            diff_values(&item_path, src_val, &dst_val, diffs);
+        } else {
             diffs.push(DiffEntry {
-                key: format!(
-                    "{}{}id:{}",
-                    path,
-                    if path.is_empty() { "" } else { "." },
-                    id
-                ),
+                key: item_path,
                 source_value: format_value(src_val),
                 dest_value: "null".to_string(),
             });
         }
     }
 
-    // Find added items
-    for (id, dst_val) in &dst_map {
-        if !src_map.contains_key(id) {
-            diffs.push(DiffEntry {
-                key: format!(
-                    "{}{}id:{}",
-                    path,
-                    if path.is_empty() { "" } else { "." },
-                    id
-                ),
-                source_value: "null".to_string(),
-                dest_value: format_value(dst_val),
-            });
-        }
-    }
-
-    // Compare modified items
-    for (id, src_val) in &src_map {
-        if let Some(&dst_val) = dst_map.get(id) {
-            let item_path = format!(
+    for (id, dst_val) in dst_map.iter() {
+        diffs.push(DiffEntry {
+            key: format!(
                 "{}{}id:{}",
                 path,
                 if path.is_empty() { "" } else { "." },
                 id
-            );
-            diff_values(&item_path, src_val, dst_val, diffs);
-        }
+            ),
+            source_value: "null".to_string(),
+            dest_value: format_value(dst_val),
+        });
     }
 }
 
@@ -225,7 +205,6 @@ fn diff_by_index(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffE
 
         match (src.get(i), dst.get(i)) {
             (Some(s), Some(d)) => {
-                // For objects, report the whole object as changed if any field differs
                 if s.is_object() && d.is_object() && s != d {
                     diffs.push(DiffEntry {
                         key: item_path,
@@ -233,7 +212,6 @@ fn diff_by_index(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffE
                         dest_value: format_value(d),
                     });
                 } else if !s.is_object() || !d.is_object() {
-                    // For non-objects, use the existing diff logic
                     diff_values(&item_path, s, d, diffs);
                 }
             }
@@ -259,7 +237,6 @@ fn diff_objects(
     dst: &Map<String, Value>,
     diffs: &mut Vec<DiffEntry>,
 ) {
-    // Check all source keys
     for (key, src_val) in src {
         let field_path = if path.is_empty() {
             key.clone()
@@ -277,7 +254,6 @@ fn diff_objects(
         }
     }
 
-    // Check destination-only keys
     for (key, dst_val) in dst {
         if !src.contains_key(key) {
             let field_path = if path.is_empty() {
@@ -344,7 +320,6 @@ mod tests {
             .unwrap();
         let config = result.unwrap();
 
-        // Should not have length diff anymore
         assert!(!config.diffs.iter().any(|d| d.key == "length"));
         assert!(config.diffs.iter().any(|d| d.key == "id:func1"));
         assert!(config.diffs.iter().any(|d| d.key == "id:func2"));
