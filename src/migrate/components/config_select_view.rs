@@ -1,8 +1,8 @@
-use leptos::prelude::*;
 use crate::migrate::functions::generate_preview;
-use leptos::task::spawn_local;
-use crate::migrate::migrate_page::{ConfigItems, CONFIG_ITEM_COUNT, ViewSteps};
+use crate::migrate::migrate_page::{ConfigItems, ViewSteps, CONFIG_ITEM_COUNT};
 use crate::shared::models::ProjectConfig;
+use leptos::prelude::*;
+use leptos::task::spawn_local;
 
 #[component]
 pub fn ConfigSelectView(
