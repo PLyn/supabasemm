@@ -28,7 +28,6 @@ oauth2 = { version = "5.0.0", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
 gloo-timers = { version = "0.3.0", features = ["futures"] }
-json-structural-diff = { version = "0.2.0", optional = true }
 base64 = { version = "0.22.1", optional = true }
 regex = { version = "1.11.1", optional = true }
 chrono = { version = "0.4.41", features = ["serde"], optional = true }
@@ -46,7 +45,6 @@ ssr = [
     "dep:time",
     "dep:chrono",
     "dep:prometheus-parse",
-    "dep:json-structural-diff",
     "dep:oauth2",
     "dep:reqwest",
     "dep:tower-sessions",

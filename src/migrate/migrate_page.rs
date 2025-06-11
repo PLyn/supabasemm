@@ -23,7 +23,7 @@ pub enum ConfigItems {
     Postgres = 5,
     Branches = 6,
 }
-const CONFIG_ITEM_COUNT: usize = 7;
+pub const CONFIG_ITEM_COUNT: usize = 7;
 
 #[component]
 pub fn MigratePage() -> impl IntoView {
@@ -37,14 +37,14 @@ pub fn MigratePage() -> impl IntoView {
         RwSignal::new("Migration Status: Migration has not been run".to_string());
     let (projects_list, set_projects_list) = signal(Vec::<Project>::new());
 
-    let config_items_rw: [RwSignal<(String, bool)>; CONFIG_ITEM_COUNT] = [
-        RwSignal::new((format!("{:?}", ConfigItems::Auth), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Postgrest), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::EdgeFunctions), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Secrets), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Storage), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Postgres), false)),
-        RwSignal::new((format!("{:?}", ConfigItems::Branches), false)),
+    let config_items_rw: [RwSignal<bool>; CONFIG_ITEM_COUNT] = [
+        RwSignal::new(false),
+        RwSignal::new(false),
+        RwSignal::new(false),
+        RwSignal::new(false),
+        RwSignal::new(false),
+        RwSignal::new(false),
+        RwSignal::new(false),
     ];
 
     Effect::new(move |_| {
@@ -67,7 +67,7 @@ pub fn MigratePage() -> impl IntoView {
 
     view! {
         <Show when=move || !is_authenticated.get() >
-            <div class="flex flex-col items-center">
+            <div class="flex flex-col items-center justify-center min-h-screen"> // Added justify-center and min-h-screen
                 <h2 class="text-3xl font-bold mt-4">"Supabase Migrate project configuration"</h2>
                 <h2 class="py-4">"Sign in using Supabase to allow access to your projects using the Management API"</h2>
                 <button class="btn btn-primary" on:click=move |_| { window().location().set_href("/connect-supabase/login").unwrap(); }>

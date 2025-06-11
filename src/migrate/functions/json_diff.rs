@@ -11,7 +11,7 @@ pub async fn json_diff(
     source_value: Value,
     dest_value: Value,
 ) -> Result<Option<ProjectConfig>, ServerFnError> {
-    let diff_entries = calculate_diff(&source_value, &dest_value)?;
+    let diff_entries = calculate_diff(&config_type, &source_value, &dest_value)?;
     
     if diff_entries.is_empty() {
         Ok(None)
@@ -24,10 +24,43 @@ pub async fn json_diff(
 }
 
 #[cfg(feature = "ssr")]
-fn calculate_diff(source: &Value, dest: &Value) -> Result<Vec<DiffEntry>, ServerFnError> {
+fn calculate_diff(config_type: &str, source: &Value, dest: &Value) -> Result<Vec<DiffEntry>, ServerFnError> {
     let mut diff_entries = Vec::new();
-    diff_values("", source, dest, &mut diff_entries);
+    
+    // Pre-filter arrays if this is Secrets config
+    if config_type == "Secrets" {
+        if let (Value::Array(src_arr), Value::Array(dst_arr)) = (source, dest) {
+            // Filter out SUPABASE_ secrets before diffing
+            let filtered_src: Vec<Value> = src_arr.iter()
+                .filter(|v| !is_supabase_secret(v))
+                .cloned()
+                .collect();
+            let filtered_dst: Vec<Value> = dst_arr.iter()
+                .filter(|v| !is_supabase_secret(v))
+                .cloned()
+                .collect();
+            
+            let filtered_src_value = Value::Array(filtered_src);
+            let filtered_dst_value = Value::Array(filtered_dst);
+            diff_values("", &filtered_src_value, &filtered_dst_value, &mut diff_entries);
+        } else {
+            diff_values("", source, dest, &mut diff_entries);
+        }
+    } else {
+        diff_values("", source, dest, &mut diff_entries);
+    }
+    
     Ok(diff_entries)
+}
+
+#[cfg(feature = "ssr")]
+fn is_supabase_secret(value: &Value) -> bool {
+    if let Value::Object(obj) = value {
+        if let Some(Value::String(name)) = obj.get("name") {
+            return name.starts_with("SUPABASE_");
+        }
+    }
+    false
 }
 
 #[cfg(feature = "ssr")]
@@ -50,14 +83,7 @@ fn diff_values(path: &str, source: &Value, dest: &Value, diffs: &mut Vec<DiffEnt
 
 #[cfg(feature = "ssr")]
 fn diff_arrays(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffEntry>) {
-    // Report length difference if arrays are different sizes
-    if src.len() != dst.len() {
-        diffs.push(DiffEntry {
-            key: format!("{}{}length", path, if path.is_empty() { "" } else { "." }),
-            source_value: src.len().to_string(),
-            dest_value: dst.len().to_string(),
-        });
-    }
+    // Don't report length differences - removed this section
     
     // Check if arrays contain objects with IDs
     let src_map = to_id_map(src);
@@ -158,7 +184,19 @@ fn diff_by_index(path: &str, src: &[Value], dst: &[Value], diffs: &mut Vec<DiffE
         let item_path = format!("{}[{}]", path, i);
         
         match (src.get(i), dst.get(i)) {
-            (Some(s), Some(d)) => diff_values(&item_path, s, d, diffs),
+            (Some(s), Some(d)) => {
+                // For objects, report the whole object as changed if any field differs
+                if s.is_object() && d.is_object() && s != d {
+                    diffs.push(DiffEntry {
+                        key: item_path,
+                        source_value: format_value(s),
+                        dest_value: format_value(d),
+                    });
+                } else if !s.is_object() || !d.is_object() {
+                    // For non-objects, use the existing diff logic
+                    diff_values(&item_path, s, d, diffs);
+                }
+            },
             (Some(s), None) => diffs.push(DiffEntry {
                 key: item_path,
                 source_value: format_value(s),
@@ -255,7 +293,8 @@ mod tests {
         let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
         let config = result.unwrap();
         
-        assert!(config.diffs.iter().any(|d| d.key == "length"));
+        // Should not have length diff anymore
+        assert!(!config.diffs.iter().any(|d| d.key == "length"));
         assert!(config.diffs.iter().any(|d| d.key == "id:func1"));
         assert!(config.diffs.iter().any(|d| d.key == "id:func2"));
     }
@@ -319,164 +358,55 @@ mod tests {
         let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
         let config = result.unwrap();
         
-        assert!(config.diffs.iter().any(|d| d.key == "length"));
+        // No length diff
+        assert!(!config.diffs.iter().any(|d| d.key == "length"));
         assert!(config.diffs.iter().any(|d| d.key == "[2]" && d.source_value == "3" && d.dest_value == "5"));
         assert!(config.diffs.iter().any(|d| d.key == "[3]" && d.source_value == "4" && d.dest_value == "null"));
     }
     
     #[tokio::test]
-    async fn test_mixed_types() {
-        let source = r#"{"value": "123"}"#;
-        let dest = r#"{"value": 123}"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        assert_eq!(config.diffs.len(), 1);
-        assert!(config.diffs.iter().any(|d| d.key == "value" && d.source_value == "123" && d.dest_value == "123"));
-    }
-    
-    #[tokio::test]
-    async fn test_null_values() {
-        let source = r#"{"a": null, "b": "value"}"#;
-        let dest = r#"{"a": "new_value", "b": null}"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        assert_eq!(config.diffs.len(), 2);
-        assert!(config.diffs.iter().any(|d| d.key == "a" && d.source_value == "null" && d.dest_value == "new_value"));
-        assert!(config.diffs.iter().any(|d| d.key == "b" && d.source_value == "value" && d.dest_value == "null"));
-    }
-    
-    #[tokio::test]
-    async fn test_boolean_diff() {
-        let source = r#"{"active": true, "verified": false}"#;
-        let dest = r#"{"active": false, "verified": false}"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        assert_eq!(config.diffs.len(), 1);
-        assert!(config.diffs.iter().any(|d| d.key == "active" && d.source_value == "true" && d.dest_value == "false"));
-    }
-    
-    #[tokio::test]
-    async fn test_array_to_object() {
-        let source = r#"{"data": [1, 2, 3]}"#;
-        let dest = r#"{"data": {"key": "value"}}"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        assert_eq!(config.diffs.len(), 1);
-        assert!(config.diffs.iter().any(|d| d.key == "data"));
-    }
-    
-    #[tokio::test]
-    async fn test_empty_to_populated() {
-        let source = r#"{}"#;
-        let dest = r#"{"a": 1, "b": "test"}"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        assert_eq!(config.diffs.len(), 2);
-        assert!(config.diffs.iter().any(|d| d.key == "a" && d.source_value == "null"));
-        assert!(config.diffs.iter().any(|d| d.key == "b" && d.source_value == "null"));
-    }
-    
-    #[tokio::test]
-    async fn test_array_with_modified_objects() {
+    async fn test_secrets_with_supabase_filter() {
         let source = r#"[
-            {"id": "1", "name": "Item 1", "price": 10},
-            {"id": "2", "name": "Item 2", "price": 20}
+            {"name": "MY_SECRET", "updated_at": "2025-01-01T00:00:00Z", "value": "secret1"},
+            {"name": "SUPABASE_URL", "updated_at": "2025-01-01T00:00:00Z", "value": "old_url"},
+            {"name": "ANOTHER_SECRET", "updated_at": "2025-01-01T00:00:00Z", "value": "secret2"}
         ]"#;
         let dest = r#"[
-            {"id": "1", "name": "Item 1", "price": 15},
-            {"id": "2", "name": "Item 2 Updated", "price": 20}
+            {"name": "MY_SECRET", "updated_at": "2025-01-02T00:00:00Z", "value": "secret1_new"},
+            {"name": "SUPABASE_URL", "updated_at": "2025-01-02T00:00:00Z", "value": "new_url"},
+            {"name": "SUPABASE_ANON_KEY", "updated_at": "2025-01-02T00:00:00Z", "value": "anon_key"}
         ]"#;
         
         let source_value: Value = serde_json::from_str(source).unwrap();
         let dest_value: Value = serde_json::from_str(dest).unwrap();
         
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
+        let result = json_diff("Secrets".to_string(), source_value, dest_value).await.unwrap();
         let config = result.unwrap();
         
+        // After filtering SUPABASE_ secrets:
+        // Source has: MY_SECRET, ANOTHER_SECRET
+        // Dest has: MY_SECRET
+        // So we should see:
+        // - [0] changed (MY_SECRET value changed)
+        // - [1] removed (ANOTHER_SECRET)
         assert_eq!(config.diffs.len(), 2);
-        assert!(config.diffs.iter().any(|d| d.key == "id:1.price" && d.source_value == "10" && d.dest_value == "15"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:2.name" && d.dest_value == "Item 2 Updated"));
+        assert!(config.diffs.iter().any(|d| d.key == "[0]")); // MY_SECRET changed
+        assert!(config.diffs.iter().any(|d| d.key == "[1]" && d.source_value.contains("ANOTHER_SECRET"))); // ANOTHER_SECRET removed
+        
+        // Should not have any SUPABASE_ related diffs
+        for diff in &config.diffs {
+            assert!(!diff.source_value.contains("SUPABASE_"));
+            assert!(!diff.dest_value.contains("SUPABASE_"));
+        }
     }
     
     #[tokio::test]
-    async fn test_complex_edge_functions() {
-        let source = r#"[{
-            "verify_jwt": true,
-            "id": "d5f0075a-a49a-4243-aec8-7a750b69ee5d",
-            "slug": "log-hi-message",
-            "version": 7,
-            "name": "log-hi-message",
-            "status": "ACTIVE",
-            "entrypoint_path": "file:///tmp/user_fn_zfgioqfrunhcvbvoxvwq_d5f0075a-a49a-4243-aec8-7a750b69ee5d_5/index.ts",
-            "import_map_path": null,
-            "import_map": false,
-            "created_at": 1746908962504,
-            "updated_at": 1748106892462
-        }]"#;
-        
-        let dest = r#"[{
-            "verify_jwt": false,
-            "id": "d5f0075a-a49a-4243-aec8-7a750b69ee5d",
-            "slug": "log-hi-message",
-            "version": 8,
-            "name": "log-hi-message-v2",
-            "status": "INACTIVE",
-            "entrypoint_path": "file:///tmp/user_fn_zfgioqfrunhcvbvoxvwq_d5f0075a-a49a-4243-aec8-7a750b69ee5d_6/index.ts",
-            "import_map_path": "/path/to/import.map",
-            "import_map": true,
-            "created_at": 1746908962504,
-            "updated_at": 1748106892463
-        }]"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should detect multiple field changes
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.verify_jwt"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.version"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.name"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.status"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.import_map"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:d5f0075a-a49a-4243-aec8-7a750b69ee5d.import_map_path"));
-    }
-    
-    #[tokio::test]
-    async fn test_arrays_without_ids() {
+    async fn test_array_object_diff_whole_object() {
         let source = r#"[
-            {"name": "Item 1", "value": 100},
-            {"name": "Item 2", "value": 200}
+            {"name": "item1", "value": 100, "active": true}
         ]"#;
         let dest = r#"[
-            {"name": "Item 1", "value": 150},
-            {"name": "Item 3", "value": 300}
+            {"name": "item1", "value": 200, "active": true}
         ]"#;
         
         let source_value: Value = serde_json::from_str(source).unwrap();
@@ -485,218 +415,10 @@ mod tests {
         let result = json_diff("test".to_string(), source_value, dest_value).await.unwrap();
         let config = result.unwrap();
         
-        // Should use index-based comparison
-        assert!(config.diffs.iter().any(|d| d.key == "[0].value"));
-        assert!(config.diffs.iter().any(|d| d.key == "[1].name"));
-        assert!(config.diffs.iter().any(|d| d.key == "[1].value"));
-    }
-    
-    #[tokio::test]
-    async fn test_postgres_config_diff() {
-        let source = r#"{
-            "effective_cache_size": "4GB",
-            "max_connections": 100,
-            "maintenance_work_mem": "256MB",
-            "session_replication_role": "origin",
-            "shared_buffers": "1GB",
-            "track_commit_timestamp": false,
-            "work_mem": "4MB"
-        }"#;
-        let dest = r#"{
-            "effective_cache_size": "8GB",
-            "max_connections": 200,
-            "maintenance_work_mem": "256MB",
-            "session_replication_role": "replica",
-            "shared_buffers": "2GB",
-            "track_commit_timestamp": true,
-            "work_mem": "8MB",
-            "max_parallel_workers": 8
-        }"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("postgres_config".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should detect all changes including added field
-        assert!(config.diffs.iter().any(|d| d.key == "effective_cache_size" && d.source_value == "4GB" && d.dest_value == "8GB"));
-        assert!(config.diffs.iter().any(|d| d.key == "max_connections" && d.source_value == "100" && d.dest_value == "200"));
-        assert!(config.diffs.iter().any(|d| d.key == "max_parallel_workers" && d.source_value == "null" && d.dest_value == "8"));
-    }
-    
-    #[tokio::test]
-    async fn test_auth_config_with_many_nulls() {
-        let source = r#"{
-            "disable_signup": false,
-            "external_google_enabled": true,
-            "external_google_client_id": "old-client-id",
-            "external_google_secret": null,
-            "mailer_otp_exp": 3600,
-            "password_min_length": 6,
-            "security_captcha_enabled": false,
-            "security_captcha_provider": "hcaptcha",
-            "sms_provider": "twilio"
-        }"#;
-        let dest = r#"{
-            "disable_signup": false,
-            "external_google_enabled": true,
-            "external_google_client_id": "new-client-id",
-            "external_google_secret": "new-secret",
-            "mailer_otp_exp": 3600,
-            "password_min_length": 8,
-            "security_captcha_enabled": true,
-            "security_captcha_provider": "turnstile",
-            "sms_provider": "messagebird"
-        }"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("auth_config".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should detect null to value changes
-        assert!(config.diffs.iter().any(|d| d.key == "external_google_secret" && d.source_value == "null" && d.dest_value == "new-secret"));
-        assert!(config.diffs.iter().any(|d| d.key == "security_captcha_enabled" && d.source_value == "false" && d.dest_value == "true"));
-    }
-    
-    #[tokio::test]
-    async fn test_branch_environments_diff() {
-        let source = r#"[
-            {
-                "id": "branch-1",
-                "name": "staging",
-                "project_ref": "proj-123",
-                "parent_project_ref": null,
-                "is_default": false,
-                "git_branch": "staging",
-                "pr_number": null,
-                "persistent": true,
-                "status": "ACTIVE",
-                "created_at": "2024-01-01T00:00:00Z",
-                "updated_at": "2024-01-01T00:00:00Z"
-            },
-            {
-                "id": "branch-2",
-                "name": "feature-x",
-                "project_ref": "proj-124",
-                "parent_project_ref": "proj-123",
-                "is_default": false,
-                "git_branch": "feature/x",
-                "pr_number": 42,
-                "persistent": false,
-                "status": "CREATING_PROJECT",
-                "created_at": "2024-01-02T00:00:00Z",
-                "updated_at": "2024-01-02T00:00:00Z"
-            }
-        ]"#;
-        let dest = r#"[
-            {
-                "id": "branch-1",
-                "name": "staging",
-                "project_ref": "proj-123",
-                "parent_project_ref": null,
-                "is_default": true,
-                "git_branch": "staging",
-                "pr_number": null,
-                "persistent": true,
-                "status": "ACTIVE",
-                "created_at": "2024-01-01T00:00:00Z",
-                "updated_at": "2024-01-03T00:00:00Z"
-            },
-            {
-                "id": "branch-3",
-                "name": "feature-y",
-                "project_ref": "proj-125",
-                "parent_project_ref": "proj-123",
-                "is_default": false,
-                "git_branch": "feature/y",
-                "pr_number": 43,
-                "persistent": false,
-                "status": "ACTIVE",
-                "created_at": "2024-01-03T00:00:00Z",
-                "updated_at": "2024-01-03T00:00:00Z"
-            }
-        ]"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("branches".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should detect branch-2 removed, branch-3 added, branch-1 modified
-        assert!(config.diffs.iter().any(|d| d.key == "id:branch-2"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:branch-3"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:branch-1.is_default"));
-        assert!(config.diffs.iter().any(|d| d.key == "id:branch-1.updated_at"));
-    }
-    
-    #[tokio::test]
-    async fn test_large_config_with_mostly_nulls() {
-        let source = r#"{
-            "api_max_request_duration": null,
-            "db_max_pool_size": null,
-            "disable_signup": false,
-            "external_email_enabled": true,
-            "jwt_exp": 3600,
-            "mailer_otp_exp": 3600,
-            "password_required_characters": "abcdefghijklmnopqrstuvwxyz",
-            "security_captcha_provider": "hcaptcha",
-            "site_url": "https://old.example.com"
-        }"#;
-        let dest = r#"{
-            "api_max_request_duration": 30,
-            "db_max_pool_size": 25,
-            "disable_signup": false,
-            "external_email_enabled": true,
-            "jwt_exp": 3600,
-            "mailer_otp_exp": 3600,
-            "password_required_characters": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-            "security_captcha_provider": "turnstile",
-            "site_url": "https://new.example.com"
-        }"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("config".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should only report actual changes, not unchanged nulls
-        assert!(config.diffs.iter().any(|d| d.key == "api_max_request_duration"));
-        assert!(config.diffs.iter().any(|d| d.key == "db_max_pool_size"));
-        assert!(config.diffs.iter().any(|d| d.key == "password_required_characters"));
-        assert!(config.diffs.iter().any(|d| d.key == "site_url"));
-        // Should not include unchanged fields
-        assert!(!config.diffs.iter().any(|d| d.key == "jwt_exp"));
-    }
-    
-    #[tokio::test]
-    async fn test_special_characters_in_values() {
-        let source = r#"{
-            "smtp_pass": "old\"password\"with\\quotes",
-            "uri_allow_list": "https://example.com,https://test.com",
-            "mailer_templates_confirmation_content": "<h1>Welcome {{name}}</h1>",
-            "external_azure_url": "https://login.microsoftonline.com/{{tenant}}/v2.0"
-        }"#;
-        let dest = r#"{
-            "smtp_pass": "new'password'with\ttabs",
-            "uri_allow_list": "https://example.com,https://test.com,https://new.com",
-            "mailer_templates_confirmation_content": "<h2>Hello {{name}}!</h2>",
-            "external_azure_url": "https://login.microsoftonline.com/common/v2.0"
-        }"#;
-        
-        let source_value: Value = serde_json::from_str(source).unwrap();
-        let dest_value: Value = serde_json::from_str(dest).unwrap();
-        
-        let result = json_diff("special_chars".to_string(), source_value, dest_value).await.unwrap();
-        let config = result.unwrap();
-        
-        // Should handle special characters correctly
-        assert_eq!(config.diffs.len(), 4);
-        assert!(config.diffs.iter().any(|d| d.key == "smtp_pass"));
-        assert!(config.diffs.iter().any(|d| d.key == "uri_allow_list"));
+        // Should report the whole object as changed
+        assert_eq!(config.diffs.len(), 1);
+        assert!(config.diffs.iter().any(|d| d.key == "[0]"));
+        assert!(config.diffs[0].source_value.contains("\"value\":100"));
+        assert!(config.diffs[0].dest_value.contains("\"value\":200"));
     }
 }

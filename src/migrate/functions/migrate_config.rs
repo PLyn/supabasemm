@@ -27,7 +27,7 @@ pub async fn migrate_config(
 
                 if let Some(source_json) = auth_config {
                     let config: AuthConfigStruct = serde_json::from_str(&source_json.clone())?;
-                    let patched_config: AuthConfigStruct = config.prepare_for_patch();
+                    let patched_config: AuthConfigStruct = config.remove_smtp_fields_if_disabled();
                     let patch_json = serde_json::to_string(&patched_config)?;
                     eprintln!("Patch JSON: {}", patch_json.clone());
                     let response = mgmt_api_patch(

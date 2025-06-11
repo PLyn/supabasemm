@@ -591,7 +591,7 @@ impl AuthConfigStruct {
 
     /// Prepare the struct for PATCH request by removing SMTP-dependent fields
     /// if SMTP is not fully configured
-    pub fn prepare_for_patch(mut self) -> Self {
+    pub fn remove_smtp_fields_if_disabled(mut self) -> Self {
         if !self.has_custom_smtp() {
             // Remove fields that require custom SMTP
             self.smtp_sender_name = None;
