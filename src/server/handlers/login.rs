@@ -1,6 +1,6 @@
 use crate::{
     server::server_models::{AppState, OAuthSessionData},
-    shared::models::{AUTH_URL, REDIRECT_URL},
+    shared::models::{AUTH_URL},
 };
 use axum::{
     extract::State,
@@ -28,7 +28,7 @@ pub async fn login_handler(
 
     url.query_pairs_mut()
         .append_pair("client_id", &app_state.config.client_id)
-        .append_pair("redirect_uri", REDIRECT_URL)
+        .append_pair("redirect_uri", &app_state.config.redirect_url.as_str())
         .append_pair("response_type", "code")
         .append_pair("state", csrf_token.secret())
         .append_pair("code_challenge", &pkce_challenge.as_str())

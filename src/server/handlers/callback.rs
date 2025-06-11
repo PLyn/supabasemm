@@ -1,6 +1,6 @@
 use crate::{
     server::server_models::{AppState, CallbackParams, OAuthSessionData},
-    shared::models::{REDIRECT_URL, TOKEN_URL},
+    shared::models::{TOKEN_URL},
 };
 use axum::{
     extract::{Query, State},
@@ -102,7 +102,7 @@ pub async fn callback_handler(
         ("code", params.code.as_str()),
         ("code_verifier", pkce_verifier.secret()),
         ("grant_type", "authorization_code"),
-        ("redirect_uri", REDIRECT_URL),
+        ("redirect_uri", app_state.config.redirect_url.as_str()),
     ];
 
     let response = match client.post(TOKEN_URL).form(&params).send().await {
