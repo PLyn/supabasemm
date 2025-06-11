@@ -11,7 +11,7 @@ leptos = { version = "0.8.0" }
 leptos_router = { version = "0.8.0" }
 thiserror = "2.0.12"
 futures = "0.3.31"
-serde = { version = "1", default-features = false, features = ["derive"]}
+serde = { version = "1", default-features = false, features = ["derive"] }
 
 axum = { version = "0.8.0", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -28,13 +28,12 @@ oauth2 = { version = "5.0.0", optional = true }
 tower-sessions = { version = "0.14.0", optional = true }
 reqwest = { version = "0.12.15", features = ["json"], optional = true }
 gloo-timers = { version = "0.3.0", features = ["futures"] }
-json-structural-diff = { version = "0.2.0", optional = true }
 base64 = { version = "0.22.1", optional = true }
 regex = { version = "1.11.1", optional = true }
 chrono = { version = "0.4.41", features = ["serde"], optional = true }
 prometheus-parse = { version = "0.2.5", optional = true }
 serde_json = { version = "1.0.140", optional = true }
-time = {version = "0.3.41", optional = true}
+time = { version = "0.3.41", optional = true }
 
 
 [features]
@@ -46,7 +45,6 @@ ssr = [
     "dep:time",
     "dep:chrono",
     "dep:prometheus-parse",
-    "dep:json-structural-diff",
     "dep:oauth2",
     "dep:reqwest",
     "dep:tower-sessions",

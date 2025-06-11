@@ -1,9 +1,5 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
-
-> curl https://zfgioqfrunhcvbvoxvwq.supabase.co/customer/v1/privileged/metrics --user 'service_role:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmZ2lvcWZydW5oY3Zidm94dndxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjI5Njk0NCwiZXhwIjoyMDYxODcyOTQ0fQ.Z7B5hrCU3RgBlTHajC33jpwZs7tUh_ZO4uM6GetFw9E'
+Tailwind CLI command (windows) -  ./tailwindcss/cli.exe -i ./style/input.css -o ./style/output.css --watch --minify
+Tailwind CLI command (linux) -  ./tailwindcss/cli -i ./style/input.css -o ./style/output.css --watch --minify
 
 # Leptos Axum Starter Template
 

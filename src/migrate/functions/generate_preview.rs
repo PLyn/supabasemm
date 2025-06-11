@@ -1,100 +1,101 @@
-use std::collections::HashMap;
-
-use crate::shared::models::{DiffEntry, ProjectConfig};
-use crate::shared::server_functions::mgmt_api_get;
+use crate::migrate::migrate_page::CONFIG_ITEM_COUNT;
+use crate::shared::models::ProjectConfig;
 use leptos::prelude::*;
-#[cfg(feature = "ssr")]
-use serde_json::Value;
 
 #[server]
 pub async fn generate_preview(
-    source_project_rw: String,
-    dest_project_rw: String,
+    source_project: String,
+    dest_project: String,
+    config_items_rw: [RwSignal<bool>; CONFIG_ITEM_COUNT],
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
-    use json_structural_diff::JsonDiff;
-    use serde_json::{Value, Map};
+    use crate::migrate::migrate_page::ConfigItems;
+    use crate::shared::server_functions::mgmt_api_get;
+
+    //server only imports
+    use super::json_diff;
+    use leptos_axum::extract;
+    use serde_json::Value;
+    use tower_sessions::Session;
+
+    let session: Session = extract().await?;
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut config_json: Vec<(String, String, String)> = Vec::new();
 
-    let source_config = mgmt_api_get(format!("/projects/{}/config/auth", source_project_rw)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/config/auth", dest_project_rw)).await?;
-    config_json.push(("Auth".to_string(), source_config, dest_config));
+    if config_items_rw[ConfigItems::Auth as usize].get() == true {
+        let source_config =
+            mgmt_api_get(format!("/projects/{}/config/auth", source_project)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/config/auth", dest_project)).await?;
+        config_json.push((
+            format!("{:?}", ConfigItems::Auth),
+            source_config,
+            dest_config,
+        ));
+    }
 
-    let source_config = mgmt_api_get(format!("/projects/{}/postgrest", source_project_rw)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/postgrest", dest_project_rw)).await?;
-    config_json.push(("Postgrest".to_string(), source_config, dest_config));
+    if config_items_rw[ConfigItems::Postgrest as usize].get() == true {
+        let source_config = mgmt_api_get(format!("/projects/{}/postgrest", source_project)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/postgrest", dest_project)).await?;
+        config_json.push((
+            format!("{:?}", ConfigItems::Postgrest),
+            source_config,
+            dest_config,
+        ));
+    }
 
-    let source_config = mgmt_api_get(format!("/projects/{}/functions", source_project_rw)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_project_rw)).await?;
-    config_json.push(("Edge Functions".to_string(), source_config, dest_config));
+    if config_items_rw[ConfigItems::EdgeFunctions as usize].get() == true {
+        let source_config = mgmt_api_get(format!("/projects/{}/functions", source_project)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_project)).await?;
+        config_json.push((
+            format!("{:?}", ConfigItems::EdgeFunctions),
+            source_config,
+            dest_config,
+        ));
+    }
 
-    let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_project_rw)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_project_rw)).await?;
-    config_json.push(("Project Secrets".to_string(), source_config, dest_config));
+    if config_items_rw[ConfigItems::Secrets as usize].get() == true {
+        let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_project)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_project)).await?;
+        config_json.push((
+            format!("{:?}", ConfigItems::Secrets),
+            source_config,
+            dest_config,
+        ));
+    }
 
-    let source_config = mgmt_api_get(format!("/projects/{}/config/database/postgres", source_project_rw)).await?;
-    let dest_config = mgmt_api_get(format!("/projects/{}/config/database/postgres",dest_project_rw)).await?;
-    config_json.push(("Postgres".to_string(), source_config, dest_config));
+    if config_items_rw[ConfigItems::Postgres as usize].get() == true {
+        let source_config = mgmt_api_get(format!(
+            "/projects/{}/config/database/postgres",
+            source_project
+        ))
+        .await?;
+        let dest_config = mgmt_api_get(format!(
+            "/projects/{}/config/database/postgres",
+            dest_project
+        ))
+        .await?;
 
-    for (config_type, source_json, dest_json) in config_json {
-        let source_value: Value = serde_json::from_str(&source_json)?;
-        let dest_value: Value = serde_json::from_str(&dest_json)?;
+        eprintln!("postgres src: {} || dest: {}", source_config, dest_config);
+        config_json.push((
+            format!("{:?}", ConfigItems::Postgres),
+            source_config,
+            dest_config,
+        ));
+    }
 
-        let diff_option = JsonDiff::diff_string(&source_value, &dest_value, false);
-        if let Some(diff_strings) = diff_option {
-            let (config_diffs, diff_map) = format_diff_output(diff_strings.as_str());
-            let body_string = serde_json::to_string(&diff_map)?;
-            
-            if body_string.len() > 2 {
-                eprintln!("body: {:?} string Len: {}", body_string, body_string.len());
-                project_config.push(ProjectConfig { 
-                    name: config_type.clone(), 
-                    diffs: config_diffs, 
-                    config_json: body_string 
-                }); 
-            }            
+    for (service, source_json, dest_json) in config_json {
+        let source: Value = serde_json::from_str(&source_json)?;
+        let dest: Value = serde_json::from_str(&dest_json)?;
+
+        let project_config_entry = json_diff(service.clone(), source.clone(), dest).await?;
+
+        if let Some(config_entry) = project_config_entry {
+            project_config.push(config_entry);
+        }
+
+        if let Err(e) = session.insert(service.as_str(), source).await {
+            eprintln!("Failed to insert preview results into session: {:?}", e);
         }
     }
     Ok(project_config)
-}
-
-#[cfg(feature = "ssr")]
-fn format_diff_output(diff_str: &str) -> (Vec<DiffEntry>, Value) {
-    use std::collections::HashMap;
-    use serde_json::json;
-
-    let mut source_map: HashMap<String, String> = HashMap::new();
-    let mut dest_map: HashMap<String, String> = HashMap::new();
-    let mut diff_entries: Vec<DiffEntry> = Vec::new();
-    let mut diff_map: HashMap<String, String> = HashMap::new();
-    for line in diff_str.lines() {
-        if line.trim().starts_with("- ") {
-            let parts: Vec<&str> = line.trim_start_matches("- ").splitn(2, ": ").collect();
-            if parts.len() == 2 {
-                source_map.insert(parts[0].to_string(), parts[1].to_string());
-            }
-        } else if line.trim().starts_with("+ ") {
-            let parts: Vec<&str> = line.trim_start_matches("+ ").splitn(2, ": ").collect();
-            if parts.len() == 2 {
-                dest_map.insert(parts[0].to_string(), parts[1].to_string());
-            }
-        }
-    }
-
-    for (key, source_val) in &source_map {
-        if let Some(dest_val) = dest_map.get(key) {
-            if source_val != dest_val {
-                diff_entries.push(DiffEntry {
-                    key: key.to_string(),
-                    source_value: source_val.to_string(),
-                    dest_value: dest_val.to_string(),
-                });
-
-                diff_map.insert(key.clone(), source_val.clone());
-            }
-        }
-    }
-
-    (diff_entries, json!(diff_map))
 }

@@ -24,7 +24,11 @@ pub async fn callback_handler(
         Ok(data) => data,
         Err(_) => None,
     };
-
+    eprintln!(
+        "Session ID: {:?} to get oauth retrieved from session: {:?}",
+        session.id(),
+        oauth_data
+    );
     let oauth_data = match oauth_data {
         Some(data) => data,
         None => {
@@ -87,7 +91,6 @@ pub async fn callback_handler(
             "<h1>Error</h1><p>CSRF token mismatch. Please try logging in again.</p>".to_string(),
         );
     }
-    eprintln!("CSRF token verified.");
 
     let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
 
