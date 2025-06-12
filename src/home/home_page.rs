@@ -1,13 +1,11 @@
 use leptos::prelude::*;
-use crate::shared::server_functions::{check_auth_status, get_projects};
-use crate::shared::models::{Project, ProjectConfig};
 
 #[component]
 pub fn HomePage() -> impl IntoView {
-   let count = RwSignal::new(0);
-   let on_click = move |_| *count.write() += 1;
+    let count = RwSignal::new(0);
+    let on_click = move |_| *count.write() += 1;
 
-   view! {
+    view! {
       <h1>"Welcome to Leptos!"</h1>
       <button on:click=on_click>"Click Me: " {count}</button>
       <div>"Test area below"</div>

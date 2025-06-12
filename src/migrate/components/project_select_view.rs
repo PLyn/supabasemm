@@ -4,20 +4,20 @@ use leptos::prelude::*;
 
 #[component]
 pub fn ProjectSelectView(
-    source_project_rw: RwSignal<String>,
-    dest_project_rw: RwSignal<String>,
+    source_id_rw: RwSignal<String>,
+    dest_id_rw: RwSignal<String>,
     projects_list: ReadSignal<Vec<Project>>,
     next_step_fn: impl Fn() + 'static + Clone + Send + Sync,
 ) -> impl IntoView {
     let validate_source = Signal::derive(move || {
-        if source_project_rw.get().is_empty() {
+        if source_id_rw.get().is_empty() {
             return "Please select a source project.".to_string();
         }
 
         if let Some(project) = projects_list
             .get()
             .iter()
-            .find(|p| p.id == source_project_rw.get())
+            .find(|p| p.id == source_id_rw.get())
         {
             if project.status == "INACTIVE" {
                 return "Selected source project is INACTIVE.".to_string();
@@ -27,14 +27,14 @@ pub fn ProjectSelectView(
     });
 
     let validate_destination = Signal::derive(move || {
-        if dest_project_rw.get().is_empty() {
+        if dest_id_rw.get().is_empty() {
             return "Please select a destination project.".to_string();
         }
 
         if let Some(project) = projects_list
             .get()
             .iter()
-            .find(|p| p.id == dest_project_rw.get())
+            .find(|p| p.id == dest_id_rw.get())
         {
             if project.status == "INACTIVE" {
                 return "Selected destination project is INACTIVE.".to_string();
@@ -44,9 +44,9 @@ pub fn ProjectSelectView(
     });
 
     let validate_form = Signal::derive(move || {
-        if !source_project_rw.get().is_empty()
-            && !dest_project_rw.get().is_empty()
-            && source_project_rw.get() == dest_project_rw.get()
+        if !source_id_rw.get().is_empty()
+            && !dest_id_rw.get().is_empty()
+            && source_id_rw.get() == dest_id_rw.get()
         {
             return "Source and destination projects cannot be the same.".to_string();
         }
@@ -66,15 +66,15 @@ pub fn ProjectSelectView(
     view!(
         <div class="max-w-screen-lg w-full flex flex-col items-center mx-auto mt-4">
             <h1 class="mb-4 text-xl font-bold">"Migrate Project configuration"</h1>
-            <label class="mb-4 text-lg">"Source Project"</label> 
-            <select 
+            <label class="mb-4 text-lg">"Source Project"</label>
+            <select
                 class="select select-info w-full mb-4"
                 on:change:target=move |ev| {
-                    source_project_rw.set(ev.target().value().parse().unwrap());
-                }  
-                prop:value=move || source_project_rw.get()
-                prop:Selected=move || source_project_rw.get()
-            > 
+                    source_id_rw.set(ev.target().value().parse().unwrap());
+                }
+                prop:value=move || source_id_rw.get()
+                prop:Selected=move || source_id_rw.get()
+            >
                 {move || {
                     projects_list
                         .get()
@@ -89,14 +89,14 @@ pub fn ProjectSelectView(
             <AnimatedArrow />
 
             <label class="my-4 text-lg">"Destination Project"</label>
-            <select 
-                class="select select-info w-full mb-4" 
+            <select
+                class="select select-info w-full mb-4"
                 on:change:target=move |ev| {
-                    dest_project_rw.set(ev.target().value().parse().unwrap());
-                }  
-                prop:value=move || dest_project_rw.get()
-                prop:Selected=move || dest_project_rw.get()
-            > 
+                    dest_id_rw.set(ev.target().value().parse().unwrap());
+                }
+                prop:value=move || dest_id_rw.get()
+                prop:Selected=move || dest_id_rw.get()
+            >
                 {move || {
                     projects_list
                         .get()

@@ -1,7 +1,7 @@
 // src/metrics/metrics_page.rs
 use super::functions::websocket_metrics_stream;
 use crate::shared::models::{Project, ProjectMetrics};
-use crate::shared::server_functions::{check_auth_status, get_projects};
+use crate::shared::server_functions::get_projects;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 

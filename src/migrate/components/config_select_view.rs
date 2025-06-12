@@ -7,8 +7,8 @@ use leptos::task::spawn_local;
 #[component]
 pub fn ConfigSelectView(
     config_items_rw: [RwSignal<bool>; CONFIG_ITEM_COUNT],
-    source_project_rw: RwSignal<String>,
-    dest_project_rw: RwSignal<String>,
+    source_id_rw: RwSignal<String>,
+    dest_id_rw: RwSignal<String>,
     results_rw: RwSignal<Vec<ProjectConfig>>,
     current_step_rw: RwSignal<ViewSteps>,
 ) -> impl IntoView {
@@ -91,7 +91,7 @@ pub fn ConfigSelectView(
                         on:click=move |_| {
                             current_step_rw.set(ViewSteps::Loading);
                             spawn_local(async move {
-                                let project_config_option = generate_preview(source_project_rw.get(), dest_project_rw.get(), config_items_rw).await;
+                                let project_config_option = generate_preview(source_id_rw.get(), dest_id_rw.get(), config_items_rw).await;
                                 match project_config_option {
                                     Ok(project_config) => results_rw.set(project_config),
                                     Err(_) => results_rw.set(Vec::new()),
