@@ -71,22 +71,23 @@ pub fn ProjectSelectView(
                 </div>
                 <div class="px-2 py-4 flex items-center w-full justify-between">
                     <label class="mr-4 font-bold min-w-[150px]">"Source Project"</label> 
-                    <select class="select select-info w-full" bind:Selected=source_project_rw > 
-                        <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
-                            {move || {
-                                if !projects_list.get().is_empty() && source_project_rw.get().is_empty() {
-                                    source_project_rw.set(projects_list.get()[0].id.clone());
-                                }
-
-                                projects_list
-                                    .get()
-                                    .into_iter()
-                                    .map(|project| {
-                                        let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
-                                        view! { <option value={project.id.clone()}>{display_text}</option> }})
-                                    .collect_view()
-                            }}
-                        </Suspense>
+                    <select 
+                        class="select select-info w-full"
+                        on:change:target=move |ev| {
+                            source_project_rw.set(ev.target().value().parse().unwrap());
+                        }  
+                        prop:value=move || source_project_rw.get()
+                        prop:Selected=move || source_project_rw.get()
+                    > 
+                        {move || {
+                            projects_list
+                                .get()
+                                .into_iter()
+                                .map(|project| {
+                                    let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
+                                    view! { <option value={project.id.clone()}>{display_text}</option> }})
+                                .collect_view()
+                        }}
                     </select>
                 </div>
 
@@ -94,22 +95,23 @@ pub fn ProjectSelectView(
 
                 <div class="px-2 py-4 flex items-center w-full justify-between"> 
                     <label class="mr-4 font-bold min-w-[150px]">"Destination Project"</label>
-                    <select class="select select-info w-full" bind:Selected=dest_project_rw > 
-                        <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
-                            {move || {
-                                if !projects_list.get().is_empty() && dest_project_rw.get().is_empty() {
-                                    dest_project_rw.set(projects_list.get()[0].id.clone());
-                                }
-
-                                projects_list
-                                    .get()
-                                    .into_iter()
-                                    .map(|project| {
-                                        let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
-                                        view! { <option value={project.id.clone()}>{display_text}</option> }})
-                                    .collect_view()
-                            }}
-                        </Suspense>
+                    <select 
+                        class="select select-info w-full" 
+                        on:change:target=move |ev| {
+                            dest_project_rw.set(ev.target().value().parse().unwrap());
+                        }  
+                        prop:value=move || dest_project_rw.get()
+                        prop:Selected=move || dest_project_rw.get()
+                    > 
+                        {move || {
+                            projects_list
+                                .get()
+                                .into_iter()
+                                .map(|project| {
+                                    let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
+                                    view! { <option value={project.id.clone()}>{display_text}</option> }})
+                                .collect_view()
+                        }}
                     </select>
                 </div>
 

@@ -8,11 +8,13 @@ pub fn HomePage() -> impl IntoView {
 
    //local resource as it depends on auth call being true and doing both as resource led to race conditions
    let projects = LocalResource::new(move || async move { 
-      let projects_result = get_projects().await;
-      if let Ok(projects) = projects_result {
-         return projects;
-      }
-      Vec::new()
+        if check_auth.await.unwrap() {
+            let projects_result = get_projects().await;
+            if let Ok(projects) = projects_result {
+                return projects;
+            }
+        }
+        Vec::new()
    });
 
     let source_project_rw: RwSignal<String> = RwSignal::new("".to_string());
