@@ -104,11 +104,15 @@ pub fn MigratePage() -> impl IntoView {
                 </div>
             }.into_any(),
             ViewSteps::Preview => view! {
-                <div class="flex flex-col items-center justify-center min-h-screen p-4">
-                    <h3 class="text-1xl font-bold my-4">{move || migration_status_rw.get()}</h3>
-                    <button class="btn btn-secondary mb-4" on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>"Back"</button>
+                <div class="flex flex-col p-4 mt-4">
+                    <button class="btn btn-secondary mb-4 max-w-sm mx-auto" on:click=move |_| { current_step_rw.set(ViewSteps::Config); }>"Back"</button>
+                    <h3 class="text-2xl font-bold mb-4">"Preview Results"</h3>
+                    <ResultsView
+                        results_rw
+                        source_heading="Source".to_string()
+                        dest_heading="Destination".to_string() />
 
-                    <button class="btn btn-primary mt-4" on:click=move |_| {
+                    <button class="btn btn-primary mt-4 max-w-sm mx-auto" on:click=move |_| {
                         current_step_rw.set(ViewSteps::Loading);
                         spawn_local(async move {
                             let migrate_result = migrate_config(results_rw.get(), dest_project_rw.get()).await;
@@ -124,14 +128,7 @@ pub fn MigratePage() -> impl IntoView {
                             }
                             current_step_rw.set(ViewSteps::Results);
                         });
-                    }>"Migrate Project Configuration!"</button>
-
-                    <h3 class="text-2xl font-bold mb-4">"Preview Results"</h3>
-
-                    <ResultsView
-                        results_rw
-                        source_heading="Source".to_string()
-                        dest_heading="Destination".to_string() />
+                    }>"Migrate Configuration!"</button>
                 </div>
             }.into_any(),
             ViewSteps::Results => view! {

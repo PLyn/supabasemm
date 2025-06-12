@@ -64,73 +64,65 @@ pub fn ProjectSelectView(
     });
 
     view!(
-        <div class="min-h-screen flex items-center justify-center p-4">
-            <div class="max-w-screen-lg mx-auto w-full flex flex-col items-center">
-                <div class="px-2 py-4 flex items-center w-full justify-between">
-                    <h1 class="mb-4">"Select source project to copy project-specific configuration to the destination project"</h1>
-                </div>
-                <div class="px-2 py-4 flex items-center w-full justify-between">
-                    <label class="mr-4 font-bold min-w-[150px]">"Source Project"</label> 
-                    <select 
-                        class="select select-info w-full"
-                        on:change:target=move |ev| {
-                            source_project_rw.set(ev.target().value().parse().unwrap());
-                        }  
-                        prop:value=move || source_project_rw.get()
-                        prop:Selected=move || source_project_rw.get()
-                    > 
-                        {move || {
-                            projects_list
-                                .get()
-                                .into_iter()
-                                .map(|project| {
-                                    let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
-                                    view! { <option value={project.id.clone()}>{display_text}</option> }})
-                                .collect_view()
-                        }}
-                    </select>
-                </div>
+        <div class="max-w-screen-lg w-full flex flex-col items-center mx-auto mt-4">
+            <h1 class="mb-4 text-xl font-bold">"Migrate Project configuration"</h1>
+            <label class="mb-4 text-lg">"Source Project"</label> 
+            <select 
+                class="select select-info w-full mb-4"
+                on:change:target=move |ev| {
+                    source_project_rw.set(ev.target().value().parse().unwrap());
+                }  
+                prop:value=move || source_project_rw.get()
+                prop:Selected=move || source_project_rw.get()
+            > 
+                {move || {
+                    projects_list
+                        .get()
+                        .into_iter()
+                        .map(|project| {
+                            let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
+                            view! { <option value={project.id.clone()}>{display_text}</option> }})
+                        .collect_view()
+                }}
+            </select>
 
-                <AnimatedArrow />
+            <AnimatedArrow />
 
-                <div class="px-2 py-4 flex items-center w-full justify-between"> 
-                    <label class="mr-4 font-bold min-w-[150px]">"Destination Project"</label>
-                    <select 
-                        class="select select-info w-full" 
-                        on:change:target=move |ev| {
-                            dest_project_rw.set(ev.target().value().parse().unwrap());
-                        }  
-                        prop:value=move || dest_project_rw.get()
-                        prop:Selected=move || dest_project_rw.get()
-                    > 
-                        {move || {
-                            projects_list
-                                .get()
-                                .into_iter()
-                                .map(|project| {
-                                    let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
-                                    view! { <option value={project.id.clone()}>{display_text}</option> }})
-                                .collect_view()
-                        }}
-                    </select>
-                </div>
+            <label class="my-4 text-lg">"Destination Project"</label>
+            <select 
+                class="select select-info w-full mb-4" 
+                on:change:target=move |ev| {
+                    dest_project_rw.set(ev.target().value().parse().unwrap());
+                }  
+                prop:value=move || dest_project_rw.get()
+                prop:Selected=move || dest_project_rw.get()
+            > 
+                {move || {
+                    projects_list
+                        .get()
+                        .into_iter()
+                        .map(|project| {
+                            let display_text = format!("{} - {} - {} - {}", project.id, project.name, project.region, project.status);
+                            view! { <option value={project.id.clone()}>{display_text}</option> }})
+                        .collect_view()
+                }}
+            </select>
 
-                <Show when=move || is_validated.get().is_empty() >
-                    <ul>
-                    <li><p style="color: red;">{validate_form.get()}</p></li>
-                    <li><p style="color: red;">{validate_source.get()}</p></li>
-                    <li><p style="color: red;">{validate_destination.get()}</p></li>
-                    </ul>
-                </Show>
+            <Show when=move || is_validated.get().is_empty() >
+                <ul>
+                <li><p style="color: red;">{validate_form.get()}</p></li>
+                <li><p style="color: red;">{validate_source.get()}</p></li>
+                <li><p style="color: red;">{validate_destination.get()}</p></li>
+                </ul>
+            </Show>
 
-                <Show when=move || !is_validated.get().is_empty() >
-                    <p style="color: green;">{is_validated.get()}</p>
-                    {
-                        let step_fn = next_step_fn.clone();
-                        view! { <button class="btn btn-primary mt-4" on:click=move |_| { step_fn(); }>"Next"</button>}
-                    }
-                </Show>
-            </div>
+            <Show when=move || !is_validated.get().is_empty() >
+                <p style="color: green;">{is_validated.get()}</p>
+                {
+                    let step_fn = next_step_fn.clone();
+                    view! { <button class="btn btn-primary mt-4" on:click=move |_| { step_fn(); }>"Next"</button>}
+                }
+            </Show>
         </div>
     )
 }
