@@ -1,4 +1,4 @@
-use crate::shared::models::ProjectConfig;
+use crate::shared::{models::ProjectConfig, server_functions::check_auth_status};
 use leptos::prelude::*;
 
 #[server]
@@ -18,6 +18,10 @@ pub async fn migrate_config(
 
     eprintln!("Start migrate");
     let session: Session = extract().await?;
+    let is_auth = check_auth_status(session.clone()).await?;
+    if !is_auth {
+        return Ok(Vec::new());
+    } 
 
     let mut new_project_config = project_config.clone();
     for service in new_project_config.iter_mut() {

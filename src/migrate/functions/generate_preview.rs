@@ -1,5 +1,6 @@
 use crate::migrate::migrate_page::CONFIG_ITEM_COUNT;
 use crate::shared::models::ProjectConfig;
+use crate::shared::server_functions::check_auth_status;
 use leptos::prelude::*;
 
 #[server]
@@ -18,6 +19,10 @@ pub async fn generate_preview(
     use tower_sessions::Session;
 
     let session: Session = extract().await?;
+    let is_auth = check_auth_status(session.clone()).await?;
+    if !is_auth {
+        return Ok(Vec::new());
+    } 
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut config_json: Vec<(String, String, String)> = Vec::new();
