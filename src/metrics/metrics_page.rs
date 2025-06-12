@@ -22,12 +22,7 @@ pub fn MetricsPage() -> impl IntoView {
 
     Effect::new(move |_| {
         spawn_local(async move {
-            let auth_check_result = check_auth_status().await;
-            if let Ok(auth_status) = auth_check_result {
-                is_authenticated_rw.set(auth_status);
-            };
-
-            if is_authenticated_rw.get_untracked() && projects_rw.get_untracked().is_empty() {
+            if projects_rw.get_untracked().is_empty() {
                 let projects_result = get_projects().await;
                 if let Ok(projects_list) = projects_result {
                     projects_rw.set(projects_list);

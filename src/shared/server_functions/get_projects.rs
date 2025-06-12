@@ -6,16 +6,15 @@ pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
     // Imports
     use super::mgmt_api_get;
     use serde_json::from_str;
-    let auth_result = check_auth_status().await;
-    if let Ok(is_auth) = auth_result {
-        if !is_auth {
-            return Ok(Vec::new());
-        }
-    } else {
-        return Err(ServerFnError::ServerError("Error Authenticating".to_string()));   
-    }
-    
+    use tower_sessions::Session;
+    use leptos_axum::extract;
 
+    let session: Session = extract().await?;
+    let is_auth = check_auth_status(session).await?;
+    if !is_auth {
+        return Ok(Vec::new());
+    } 
+    
     eprintln!("get projects");
     let text = mgmt_api_get("/projects".to_string()).await?;
 
