@@ -66,12 +66,12 @@ pub fn ProjectSelectView(
     view!(
         <div class="min-h-screen flex items-center justify-center p-4">
             <div class="max-w-screen-lg mx-auto w-full flex flex-col items-center">
-                <div class="px-2 py-4 flex items-center w-full justify-between"> // Added flex, items-center, w-full, justify-between
+                <div class="px-2 py-4 flex items-center w-full justify-between">
                     <h1 class="mb-4">"Select source project to copy project-specific configuration to the destination project"</h1>
                 </div>
-                <div class="px-2 py-4 flex items-center w-full justify-between"> // Added flex, items-center, w-full, justify-between
-                    <label class="mr-4 font-bold min-w-[150px]">"Source Project"</label> // Added min-w to give labels a consistent width
-                    <select class="select select-info w-full" bind:Selected=source_project_rw > // Added w-full to make select take available width
+                <div class="px-2 py-4 flex items-center w-full justify-between">
+                    <label class="mr-4 font-bold min-w-[150px]">"Source Project"</label> 
+                    <select class="select select-info w-full" bind:Selected=source_project_rw > 
                         <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
                             {move || {
                                 if !projects_list.get().is_empty() && source_project_rw.get().is_empty() {
@@ -92,9 +92,9 @@ pub fn ProjectSelectView(
 
                 <AnimatedArrow />
 
-                <div class="px-2 py-4 flex items-center w-full justify-between"> // Added flex, items-center, w-full, justify-between
-                    <label class="mr-4 font-bold min-w-[150px]">"Destination Project"</label> // Added min-w to give labels a consistent width
-                    <select class="select select-info w-full" bind:Selected=dest_project_rw > // Added w-full to make select take available width
+                <div class="px-2 py-4 flex items-center w-full justify-between"> 
+                    <label class="mr-4 font-bold min-w-[150px]">"Destination Project"</label>
+                    <select class="select select-info w-full" bind:Selected=dest_project_rw > 
                         <Suspense fallback=move || view! { <option value="">Loading projects...</option> }>
                             {move || {
                                 if !projects_list.get().is_empty() && dest_project_rw.get().is_empty() {

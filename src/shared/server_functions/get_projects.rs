@@ -6,7 +6,7 @@ pub async fn get_projects() -> Result<Vec<Project>, ServerFnError> {
     // Imports
     use super::mgmt_api_get;
     use serde_json::from_str;
-
+    eprintln!("get projects");
     let text = mgmt_api_get("/projects".to_string()).await?;
 
     match from_str::<Vec<Project>>(&text) {

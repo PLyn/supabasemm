@@ -1,7 +1,7 @@
 use crate::home::HomePage;
-use crate::metrics::MetricsPage;
+//use crate::metrics::MetricsPage;
 use crate::migrate::MigratePage;
-use crate::monitor::MonitorPage;
+//use crate::monitor::MonitorPage;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -48,7 +48,6 @@ pub fn App() -> impl IntoView {
                         "Supabase M&M"
                     </h1>
 
-                    // Navigation menu in the middle
                     <nav class="flex space-x-8">
                         <a
                             href="/"
@@ -62,21 +61,8 @@ pub fn App() -> impl IntoView {
                         >
                             "Migrate"
                         </a>
-                        <a
-                            href="/monitor"
-                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
-                        >
-                            "Monitor"
-                        </a>
-                        <a
-                            href="/metrics"
-                            class="text-gray-600 hover:text-gray-900 font-medium transition duration-200 border-b-2 border-transparent hover:border-gray-900 pb-1"
-                        >
-                            "Metrics"
-                        </a>
                     </nav>
 
-                    // Sign in button on the right
                     <button class="btn btn-primary"
                         on:click=move |_| { window().location().set_href("/connect-supabase/login").unwrap(); }>
                         "Sign in with Supabase"
@@ -91,8 +77,6 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
                     <Route path=StaticSegment("/migrate") view=MigratePage/>
-                    <Route path=StaticSegment("/monitor") view=MonitorPage/>
-                    <Route path=StaticSegment("/metrics") view=MetricsPage/>
                 </Routes>
             </main>
         </Router>

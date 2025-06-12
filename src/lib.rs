@@ -1,7 +1,7 @@
 mod home;
-mod metrics;
+//mod metrics;
 mod migrate;
-mod monitor;
+//mod monitor;
 
 pub mod routes;
 pub mod server;
