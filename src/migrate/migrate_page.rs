@@ -52,7 +52,7 @@ pub fn MigratePage() -> impl IntoView {
                     let projects_result = get_projects().await;
                     if let Ok(projects_list) = projects_result {
                         set_projects_list.set(projects_list.clone());
-                        if !projects_list.is_empty(){
+                        if !projects_list.is_empty() {
                             source_project_rw.set(projects_list[0].id.clone());
                             dest_project_rw.set(projects_list[0].id.clone());
                         }
@@ -63,7 +63,6 @@ pub fn MigratePage() -> impl IntoView {
                 source_project_rw.set(projects_list.get_untracked()[0].id.clone());
                 dest_project_rw.set(projects_list.get_untracked()[0].id.clone());
             }
-
         }
     });
 
@@ -143,6 +142,6 @@ pub fn MigratePage() -> impl IntoView {
                 </div>
             }.into_any()
         }
-        }   
+        }
     }
 }

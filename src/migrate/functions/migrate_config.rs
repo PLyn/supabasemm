@@ -21,7 +21,7 @@ pub async fn migrate_config(
     let is_auth = check_auth_status(session.clone()).await?;
     if !is_auth {
         return Ok(Vec::new());
-    } 
+    }
 
     let mut new_project_config = project_config.clone();
     for service in new_project_config.iter_mut() {

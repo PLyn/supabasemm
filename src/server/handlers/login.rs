@@ -1,6 +1,6 @@
 use crate::{
     server::server_models::{AppState, OAuthSessionData},
-    shared::models::{AUTH_URL},
+    shared::models::AUTH_URL,
 };
 use axum::{
     extract::State,

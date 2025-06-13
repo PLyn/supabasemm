@@ -22,7 +22,7 @@ pub async fn generate_preview(
     let is_auth = check_auth_status(session.clone()).await?;
     if !is_auth {
         return Ok(Vec::new());
-    } 
+    }
 
     let mut project_config: Vec<ProjectConfig> = Vec::new();
     let mut config_json: Vec<(String, String, String)> = Vec::new();

@@ -1,6 +1,6 @@
 use crate::{
     server::server_models::{AppState, CallbackParams, OAuthSessionData},
-    shared::models::{TOKEN_URL},
+    shared::models::TOKEN_URL,
 };
 use axum::{
     extract::{Query, State},
