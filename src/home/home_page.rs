@@ -1,5 +1,3 @@
-use crate::shared::models::{Project, ProjectConfig};
-use crate::shared::server_functions::{check_auth_status, get_projects};
 use leptos::prelude::*;
 
 #[component]

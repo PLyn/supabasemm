@@ -1,12 +1,12 @@
 use crate::migrate::migrate_page::CONFIG_ITEM_COUNT;
 use crate::shared::models::ProjectConfig;
-use crate::shared::server_functions::check_auth_status;
+
 use leptos::prelude::*;
 
 #[server]
 pub async fn generate_preview(
-    source_project: String,
-    dest_project: String,
+    source_id: String,
+    dest_id: String,
     config_items_rw: [RwSignal<bool>; CONFIG_ITEM_COUNT],
 ) -> Result<Vec<ProjectConfig>, ServerFnError> {
     use crate::migrate::migrate_page::ConfigItems;
@@ -14,6 +14,7 @@ pub async fn generate_preview(
 
     //server only imports
     use super::json_diff;
+    use crate::shared::server_functions::check_auth_status;
     use leptos_axum::extract;
     use serde_json::Value;
     use tower_sessions::Session;
@@ -28,9 +29,8 @@ pub async fn generate_preview(
     let mut config_json: Vec<(String, String, String)> = Vec::new();
 
     if config_items_rw[ConfigItems::Auth as usize].get() == true {
-        let source_config =
-            mgmt_api_get(format!("/projects/{}/config/auth", source_project)).await?;
-        let dest_config = mgmt_api_get(format!("/projects/{}/config/auth", dest_project)).await?;
+        let source_config = mgmt_api_get(format!("/projects/{}/config/auth", source_id)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/config/auth", dest_id)).await?;
         config_json.push((
             format!("{:?}", ConfigItems::Auth),
             source_config,
@@ -39,8 +39,8 @@ pub async fn generate_preview(
     }
 
     if config_items_rw[ConfigItems::Postgrest as usize].get() == true {
-        let source_config = mgmt_api_get(format!("/projects/{}/postgrest", source_project)).await?;
-        let dest_config = mgmt_api_get(format!("/projects/{}/postgrest", dest_project)).await?;
+        let source_config = mgmt_api_get(format!("/projects/{}/postgrest", source_id)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/postgrest", dest_id)).await?;
         config_json.push((
             format!("{:?}", ConfigItems::Postgrest),
             source_config,
@@ -49,8 +49,8 @@ pub async fn generate_preview(
     }
 
     if config_items_rw[ConfigItems::EdgeFunctions as usize].get() == true {
-        let source_config = mgmt_api_get(format!("/projects/{}/functions", source_project)).await?;
-        let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_project)).await?;
+        let source_config = mgmt_api_get(format!("/projects/{}/functions", source_id)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/functions", dest_id)).await?;
         config_json.push((
             format!("{:?}", ConfigItems::EdgeFunctions),
             source_config,
@@ -59,8 +59,8 @@ pub async fn generate_preview(
     }
 
     if config_items_rw[ConfigItems::Secrets as usize].get() == true {
-        let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_project)).await?;
-        let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_project)).await?;
+        let source_config = mgmt_api_get(format!("/projects/{}/secrets", source_id)).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}/secrets", dest_id)).await?;
         config_json.push((
             format!("{:?}", ConfigItems::Secrets),
             source_config,
@@ -69,18 +69,9 @@ pub async fn generate_preview(
     }
 
     if config_items_rw[ConfigItems::Postgres as usize].get() == true {
-        let source_config = mgmt_api_get(format!(
-            "/projects/{}/config/database/postgres",
-            source_project
-        ))
-        .await?;
-        let dest_config = mgmt_api_get(format!(
-            "/projects/{}/config/database/postgres",
-            dest_project
-        ))
-        .await?;
-
-        eprintln!("postgres src: {} || dest: {}", source_config, dest_config);
+        let url = "/config/database/postgres".to_string();
+        let source_config = mgmt_api_get(format!("/projects/{}{}", source_id, url.clone())).await?;
+        let dest_config = mgmt_api_get(format!("/projects/{}{}", dest_id, url)).await?;
         config_json.push((
             format!("{:?}", ConfigItems::Postgres),
             source_config,
@@ -98,7 +89,7 @@ pub async fn generate_preview(
             project_config.push(config_entry);
         }
 
-        if let Err(e) = session.insert(service.as_str(), source).await {
+        if let Err(e) = session.insert(service.as_str(), source_json).await {
             eprintln!("Failed to insert preview results into session: {:?}", e);
         }
     }

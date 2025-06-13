@@ -1,7 +1,7 @@
 use super::components::{ConfigSelectView, ProjectSelectView, ResultsView};
 use super::functions::migrate_config;
 use crate::shared::models::{Project, ProjectConfig};
-use crate::shared::server_functions::{check_auth_status, get_projects};
+use crate::shared::server_functions::get_projects;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -27,8 +27,8 @@ pub const CONFIG_ITEM_COUNT: usize = 7;
 
 #[component]
 pub fn MigratePage() -> impl IntoView {
-    let source_project_rw = RwSignal::new("".to_string());
-    let dest_project_rw = RwSignal::new("".to_string());
+    let source_id_rw = RwSignal::new("".to_string());
+    let dest_id_rw = RwSignal::new("".to_string());
     let current_step_rw = RwSignal::new(ViewSteps::Projects);
     let results_rw: RwSignal<Vec<ProjectConfig>> = RwSignal::new(Vec::new());
     let migration_status_rw: RwSignal<String> =
@@ -53,15 +53,15 @@ pub fn MigratePage() -> impl IntoView {
                     if let Ok(projects_list) = projects_result {
                         set_projects_list.set(projects_list.clone());
                         if !projects_list.is_empty() {
-                            source_project_rw.set(projects_list[0].id.clone());
-                            dest_project_rw.set(projects_list[0].id.clone());
+                            source_id_rw.set(projects_list[0].id.clone());
+                            dest_id_rw.set(projects_list[0].id.clone());
                         }
                     }
                 };
             });
             if !projects_list.get_untracked().is_empty() {
-                source_project_rw.set(projects_list.get_untracked()[0].id.clone());
-                dest_project_rw.set(projects_list.get_untracked()[0].id.clone());
+                source_id_rw.set(projects_list.get_untracked()[0].id.clone());
+                dest_id_rw.set(projects_list.get_untracked()[0].id.clone());
             }
         }
     });
@@ -70,16 +70,16 @@ pub fn MigratePage() -> impl IntoView {
         {move || match current_step_rw.get() {
             ViewSteps::Projects => view! {
                 <ProjectSelectView
-                    source_project_rw
-                    dest_project_rw
+                    source_id_rw
+                    dest_id_rw
                     projects_list
                     next_step_fn=move || { current_step_rw.set(ViewSteps::Config); }
                 />}.into_any(),
             ViewSteps::Config => view! {
                 <ConfigSelectView
                     config_items_rw
-                    source_project_rw
-                    dest_project_rw
+                    source_id_rw
+                    dest_id_rw
                     results_rw
                     current_step_rw />
             }.into_any(),
@@ -114,7 +114,7 @@ pub fn MigratePage() -> impl IntoView {
                     <button class="btn btn-primary mt-4 max-w-sm mx-auto" on:click=move |_| {
                         current_step_rw.set(ViewSteps::Loading);
                         spawn_local(async move {
-                            let migrate_result = migrate_config(results_rw.get(), dest_project_rw.get()).await;
+                            let migrate_result = migrate_config(results_rw.get(),  source_id_rw.get(), dest_id_rw.get()).await;
                             match migrate_result {
                                 Ok(response) => {
                                     results_rw.set(response);
