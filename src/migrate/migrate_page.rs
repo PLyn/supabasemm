@@ -114,7 +114,7 @@ pub fn MigratePage() -> impl IntoView {
                     <button class="btn btn-primary mt-4 max-w-sm mx-auto" on:click=move |_| {
                         current_step_rw.set(ViewSteps::Loading);
                         spawn_local(async move {
-                            let migrate_result = migrate_config(results_rw.get(), dest_id_rw.get()).await;
+                            let migrate_result = migrate_config(results_rw.get(),  source_id_rw.get(), dest_id_rw.get()).await;
                             match migrate_result {
                                 Ok(response) => {
                                     results_rw.set(response);

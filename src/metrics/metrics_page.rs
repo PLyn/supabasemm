@@ -9,7 +9,6 @@ const METRICS_REFRESH_TIME: i8 = 60;
 
 #[component]
 pub fn MetricsPage() -> impl IntoView {
-    let is_authenticated_rw = RwSignal::new(false);
     let selected_project_rw = RwSignal::new("".to_string());
     let project_metrics_rw: RwSignal<Vec<ProjectMetrics>> = RwSignal::new(Vec::new());
     let projects_rw: RwSignal<Vec<Project>> = RwSignal::new(Vec::new());
