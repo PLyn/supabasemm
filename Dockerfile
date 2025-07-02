@@ -1,7 +1,7 @@
 # Get started with a build env with Rust nightly
 FROM rustlang/rust:nightly-alpine as builder
 
-# Install system dependencies first (cached layer)
+# Install required build dependencies
 RUN apk update && \
     apk add --no-cache \
     pkgconfig \
@@ -13,45 +13,38 @@ RUN apk update && \
     libc-dev \
     binaryen \
     build-base \
-    musl-dev && \
-    rm -rf /var/cache/apk/*
+    musl-dev
 
-# Install global tools (cached layer)
-RUN npm install -g sass && \
-    curl --proto '=https' --tlsv1.3 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/latest/download/cargo-leptos-installer.sh | sh && \
-    rustup target add wasm32-unknown-unknown
+# Install Sass
+RUN npm install -g sass
 
-# Set up working directory
+# Install cargo-leptos
+RUN curl --proto '=https' --tlsv1.3 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/latest/download/cargo-leptos-installer.sh | sh
+
+# Add the WASM target
+RUN rustup target add wasm32-unknown-unknown
+
+# Set up the working directory
 WORKDIR /work
+COPY . .
 
-# Set OpenSSL environment variables
+# Build your Leptos application with proper OpenSSL configuration
+# Static linking of OpenSSL
 ENV OPENSSL_STATIC=1
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 ENV OPENSSL_LIB_DIR=/usr/lib
 ENV OPENSSL_INCLUDE_DIR=/usr/include/openssl
 
-# Copy dependency files first for better caching
-COPY Cargo.toml Cargo.lock ./
+# Run the build
+RUN cargo leptos build --release -vv
 
-# Fetch dependencies (this layer will be cached when only source changes)
-RUN cargo fetch
-
-# Now copy the actual source code
-COPY . .
-
-# Build the application
-RUN cargo leptos build --release
-
-# Runtime stage - use minimal base
-FROM alpine:latest as runner
-
-# Install only runtime dependencies
-RUN apk add --no-cache ca-certificates
+# Start with a fresh image for the runner
+FROM rustlang/rust:nightly-alpine as runner
 
 WORKDIR /app
 
-# Copy only the necessary files
-COPY --from=builder /work/target/release/supabasemm /app/
+# Copy built artifacts from builder stage
+COPY --from=builder /work/target/release/ /app/
 COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
 
