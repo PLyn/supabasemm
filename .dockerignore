@@ -5,3 +5,8 @@ node_modules/
 README.md
 .env*
 *.log
+dist/
+build/
+.DS_Store
+*.swp
+*.swo

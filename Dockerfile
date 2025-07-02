@@ -24,30 +24,25 @@ RUN npm install -g sass && \
 # Set up working directory
 WORKDIR /work
 
-# Copy only dependency files first for better caching
-COPY Cargo.toml Cargo.lock ./
-COPY .cargo/ ./.cargo/
-
-# Create a dummy main.rs to satisfy cargo build for dependency caching
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-
 # Set OpenSSL environment variables
 ENV OPENSSL_STATIC=1
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 ENV OPENSSL_LIB_DIR=/usr/lib
 ENV OPENSSL_INCLUDE_DIR=/usr/include/openssl
 
-# Build dependencies only (this layer will be cached)
-RUN cargo build --release
-RUN rm -rf src/
+# Copy dependency files first for better caching
+COPY Cargo.toml Cargo.lock ./
+
+# Fetch dependencies (this layer will be cached when only source changes)
+RUN cargo fetch
 
 # Now copy the actual source code
 COPY . .
 
-# Build the application (only this runs when source changes)
+# Build the application
 RUN cargo leptos build --release
 
-# Runtime stage - use distroless or minimal base
+# Runtime stage - use minimal base
 FROM alpine:latest as runner
 
 # Install only runtime dependencies
