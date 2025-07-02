@@ -1,7 +1,7 @@
 # Get started with a build env with Rust nightly
 FROM rustlang/rust:nightly-alpine as builder
 
-# Install required build dependencies
+# Install system dependencies first (cached layer)
 RUN apk update && \
     apk add --no-cache \
     pkgconfig \
@@ -13,49 +13,50 @@ RUN apk update && \
     libc-dev \
     binaryen \
     build-base \
-    musl-dev
+    musl-dev && \
+    rm -rf /var/cache/apk/*
 
-# Install Sass
-RUN npm install -g sass
+# Install global tools (cached layer)
+RUN npm install -g sass && \
+    curl --proto '=https' --tlsv1.3 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/latest/download/cargo-leptos-installer.sh | sh && \
+    rustup target add wasm32-unknown-unknown
 
-# Install cargo-leptos
-RUN curl --proto '=https' --tlsv1.3 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/latest/download/cargo-leptos-installer.sh | sh
-
-# Add the WASM target
-RUN rustup target add wasm32-unknown-unknown
-
-# Set up the working directory
+# Set up working directory
 WORKDIR /work
-COPY . .
 
-# Build your Leptos application with proper OpenSSL configuration
-# Static linking of OpenSSL
+# Copy only dependency files first for better caching
+COPY Cargo.toml Cargo.lock ./
+COPY .cargo/ ./.cargo/
+
+# Create a dummy main.rs to satisfy cargo build for dependency caching
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Set OpenSSL environment variables
 ENV OPENSSL_STATIC=1
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 ENV OPENSSL_LIB_DIR=/usr/lib
 ENV OPENSSL_INCLUDE_DIR=/usr/include/openssl
 
-# Run the build
-RUN cargo leptos build --release -vv
+# Build dependencies only (this layer will be cached)
+RUN cargo build --release
+RUN rm -rf src/
 
-# Start with a fresh image for the runner
-FROM rustlang/rust:nightly-alpine as runner
+# Now copy the actual source code
+COPY . .
+
+# Build the application (only this runs when source changes)
+RUN cargo leptos build --release
+
+# Runtime stage - use distroless or minimal base
+FROM alpine:latest as runner
+
+# Install only runtime dependencies
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Install Supabase CLI and runtime dependencies in the runner image
-RUN apk update && \
-    apk add --no-cache \
-    curl \
-    bash \
-    openssl \
-    ca-certificates && \
-    curl -LO "https://github.com/supabase/cli/releases/download/v2.22.12/supabase_2.22.12_linux_amd64.apk" && \
-    apk add --allow-untrusted supabase_2.22.12_linux_amd64.apk && \
-    rm supabase_2.22.12_linux_amd64.apk
-
-# Copy built artifacts from builder stage
-COPY --from=builder /work/target/release/ /app/
+# Copy only the necessary files
+COPY --from=builder /work/target/release/supabasemm /app/
 COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
 
